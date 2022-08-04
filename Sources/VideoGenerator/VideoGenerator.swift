@@ -31,20 +31,26 @@ public struct VideoGenerator {
         writer.startSession(atSourceTime: .zero)
 
         await Task.detached {
+            var clips = clips
+            for index in clips.indices {
+                clips[index].prepare(with: configuration)
+            }
+            
             var totalFrameCount = CMTimeValue(0)
 
             for (clip, nextClip) in zip(clips, Array(clips.dropFirst()) + [nil]) {
                 let numberOfFrames = Int(clip.duration * TimeInterval(configuration.fps))
 
                 for frame in 0..<numberOfFrames {
-                    let elapsed = TimeInterval(frame) / TimeInterval(numberOfFrames) * clip.duration
                     autoreleasepool {
-                        let effected = clip.effects.reduce(clip.image(elapsed: elapsed, nextClip: nextClip)) { partialResult, effect in
-                            effect.apply(partialResult, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: frame)
-                        }
-                        let ciImage = effected.ciImage ?? CIImage(image: effected)!
-                        context.render(ciImage, to: pixelBuffer!)
+                        let effected = clip.render(nextClip: nextClip, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: frame)
+                        context.render(effected, to: pixelBuffer!)
                     }
+
+                    while !videoWriterAdaptor.assetWriterInput.isReadyForMoreMediaData {
+                        try? await Task.sleep(nanoseconds: NSEC_PER_MSEC * 10)
+                    }
+
                     let time = CMTime(value: totalFrameCount * 600 / Int64(configuration.fps), timescale: CMTimeScale(600))
                     videoWriterAdaptor.append(pixelBuffer!, withPresentationTime: time)
 
@@ -84,7 +90,7 @@ public struct VideoGenerator {
     }
 }
 
-public struct VideoConfiguration {
+public struct VideoConfiguration: Sendable {
     public init(fps: Int, duration: CGFloat) {
         self.fps = fps
         self.duration = duration

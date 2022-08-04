@@ -39,12 +39,23 @@ struct ContentView: View {
 
     func generate() async throws {
         try await videoGenerator.generate([
-            ImageClip(image: sampleImages[0], duration: 2, effects: [
-                PerlinNoiseEffect(contentMode: .aspectFill)
-            ]).fade(duration: 0.5),
-            ImageClip(image: sampleImages[1], duration: 1, effects: [
-                PerlinNoiseEffect(contentMode: .aspectFill)
-            ]),
+            CompositeClip([
+                ImageClip(sampleImages[0], scalingMode: .aspectFill, duration: 2, effects: [
+                    PerlinNoiseEffect()
+                ]),
+                TextClip("こんにちは", duration: 1, effects: [
+                    RotateEffect(),
+                ]),
+            ], duration: 2).fade(duration: 0.5),
+            CompositeClip([
+                ImageClip(sampleImages[1], scalingMode: .aspectFill, duration: 1, effects: [
+                    PerlinNoiseEffect(),
+                ]),
+                TextClip("にゃ〜", duration: 1, effects: [
+                    RotateEffect(speed: .pi * 2, direction: .left),
+                    TransformEffect(matrix: .init(translationX: -200, y: -100))
+                ]),
+            ], duration: 1),
         ])
     }
 }

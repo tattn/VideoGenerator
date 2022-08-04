@@ -10,12 +10,10 @@ import GameKit
 
 public struct PerlinNoiseEffect: VideoEffect {
     let offsets: [CGPoint]
-    let contentMode: VideoContentMode
     let widthPixels: Int32 = 200
 
-    public init(power: CGFloat = 24, contentMode: VideoContentMode = .aspectFill) {
+    public init(power: CGFloat = 24) {
         self.offsets = Self.perlinNoise(widthPixels: widthPixels, power: power)
-        self.contentMode = contentMode
     }
 
     static func perlinNoise(widthPixels: Int32, power: CGFloat) -> [CGPoint] {
@@ -37,23 +35,9 @@ public struct PerlinNoiseEffect: VideoEffect {
         }
     }
 
-    public func apply(_ image: UIImage, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> UIImage {
-        let size = configuration.size.applying(.init(scaleX: 1 / image.scale, y: 1 / image.scale))
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        return UIGraphicsImageRenderer(size: size, format: format).image { context in
-            let index = Int(Double(widthPixels) * (Double(currentFrame) / Double(numberOfFrames)))
-            let offset = offsets[index]
-            context.cgContext.translateBy(x: offset.x, y: offset.y)
-
-            let aspectRatio = VideoContentMode.aspectFill.aspectRatio(between: size, and: image.size)
-
-            let aspectRect = CGRect(x: (size.width - image.size.width * aspectRatio) / 2.0,
-                                    y: (size.height - image.size.height * aspectRatio) / 2.0,
-                                    width: image.size.width * aspectRatio,
-                                    height: image.size.height * aspectRatio)
-            image.draw(in: aspectRect)
-        }
+    public func apply(_ image: CIImage, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> CIImage {
+        let index = Int(Double(widthPixels) * (Double(currentFrame) / Double(numberOfFrames)))
+        let offset = offsets[index]
+        return image.clampedToExtent().transformed(by: .init(translationX: offset.x, y: offset.y))
     }
 }
-

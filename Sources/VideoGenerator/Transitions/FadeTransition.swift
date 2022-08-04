@@ -21,27 +21,22 @@ public struct FadeTransition: Transition {
 
     private let transitionDuration: TimeInterval
 
-    public func image(elapsed: TimeInterval) -> UIImage {
-        fromClip.image(elapsed: elapsed)
+    public mutating func prepare(with configuration: VideoConfiguration) {
+        fromClip.prepare(with: configuration)
     }
 
-    public func image(elapsed: TimeInterval, nextClip: Clip?) -> UIImage {
-        let fromImage = fromClip.image(elapsed: elapsed, nextClip: nextClip)
+    public func render(nextClip: Clip?, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> CIImage {
+        let fromImage = fromClip.render(nextClip: nextClip, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: currentFrame)
+        let elapsed = self.elapsed(numberOfFrames: numberOfFrames, currentFrame: currentFrame)
         guard elapsed >= duration - transitionDuration, let nextClip = nextClip else {
             return fromImage
         }
 
-        let nextImage = nextClip.image(elapsed: elapsed, nextClip: nextClip)
+        let nextImage = nextClip.render(nextClip: nextClip, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: 0) // TODO: 0
 
         let colorMatrix = CIFilter.colorMatrix()
         colorMatrix.aVector = CIVector(x: 0, y: 0, z: 0, w: duration - elapsed)
-        colorMatrix.inputImage = CIImage(image: fromImage)
-
-        guard let nextImage = CIImage(image: nextImage),
-              let result = colorMatrix.outputImage?.composited(over: nextImage) else {
-            return fromImage
-        }
-        return UIImage(ciImage: result)
+        colorMatrix.inputImage = fromImage
+        return colorMatrix.outputImage?.composited(over: nextImage) ?? fromImage
     }
 }
-
