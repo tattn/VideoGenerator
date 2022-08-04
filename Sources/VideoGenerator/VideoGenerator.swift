@@ -33,16 +33,16 @@ public struct VideoGenerator {
         await Task.detached {
             var totalFrameCount = CMTimeValue(0)
 
-            for clip in clips {
+            for (clip, nextClip) in zip(clips, Array(clips.dropFirst()) + [nil]) {
                 let numberOfFrames = Int(clip.duration * TimeInterval(configuration.fps))
 
                 for frame in 0..<numberOfFrames {
                     let elapsed = TimeInterval(frame) / TimeInterval(numberOfFrames) * clip.duration
                     autoreleasepool {
-                        let effected = clip.effects.reduce(clip.image(elapsed: elapsed)) { partialResult, effect in
+                        let effected = clip.effects.reduce(clip.image(elapsed: elapsed, nextClip: nextClip)) { partialResult, effect in
                             effect.apply(partialResult, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: frame)
                         }
-                        let ciImage = CIImage(image: effected)!
+                        let ciImage = effected.ciImage ?? CIImage(image: effected)!
                         context.render(ciImage, to: pixelBuffer!)
                     }
                     let time = CMTime(value: totalFrameCount * 600 / Int64(configuration.fps), timescale: CMTimeScale(600))

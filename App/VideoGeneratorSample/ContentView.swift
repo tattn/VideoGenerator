@@ -39,9 +39,9 @@ struct ContentView: View {
 
     func generate() async throws {
         try await videoGenerator.generate([
-            ImageClip(image: sampleImages[0], duration: 1, effects: [
+            ImageClip(image: sampleImages[0], duration: 2, effects: [
                 PerlinNoiseEffect(contentMode: .aspectFill)
-            ]),
+            ]).fade(duration: 0.5),
             ImageClip(image: sampleImages[1], duration: 1, effects: [
                 PerlinNoiseEffect(contentMode: .aspectFill)
             ]),
