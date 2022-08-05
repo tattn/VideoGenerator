@@ -2,48 +2,25 @@
 //  Clip.swift
 //  
 //
-//  Created by Tatsuya Tanaka on 2022/08/04.
+//  Created by Tatsuya Tanaka on 2022/08/05.
 //
 
-import UIKit
-import CoreImage
+import Foundation
 
-public protocol Clip: Sendable {
-    var duration: TimeInterval { get }
-    var effects: [VideoEffect] { get }
+public struct Clip {
+    public init(video: VideoClip, audio: AudioClip? = nil) {
+        self.video = video
+        self.audio = audio
+    }
 
-    mutating func prepare(with configuration: VideoConfiguration)
+    public var video: VideoClip
+    public let audio: AudioClip?
 
-    func image(elapsed: TimeInterval) -> CIImage
+    public var duration: TimeInterval {
+        video.duration
+    }
 
-    func image(elapsed: TimeInterval, nextClip: Clip?) -> CIImage
-
-    func render(nextClip: Clip?, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> CIImage
-}
-
-public extension Clip {
     mutating func prepare(with configuration: VideoConfiguration) {
-    }
-
-    func image(elapsed: TimeInterval) -> CIImage {
-        CIImage(color: .clear)
-    }
-
-    func image(elapsed: TimeInterval, nextClip: Clip?) -> CIImage {
-        image(elapsed: elapsed)
-    }
-
-    func render(nextClip: Clip?, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> CIImage {
-        let elapsed = self.elapsed(numberOfFrames: numberOfFrames, currentFrame: currentFrame)
-        guard elapsed <= duration else { return .clear }
-
-        let image = image(elapsed: elapsed, nextClip: nextClip)
-        return effects.reduce(image) { partialResult, effect in
-            effect.apply(partialResult, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: currentFrame)
-        }
-    }
-
-    func elapsed(numberOfFrames: Int, currentFrame: Int) -> TimeInterval {
-        TimeInterval(currentFrame) / TimeInterval(numberOfFrames) * duration
+        video.prepare(with: configuration)
     }
 }

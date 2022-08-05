@@ -7,14 +7,14 @@
 
 import CoreImage
 
-public struct CompositeClip: Clip {
-    public init(_ clips: [Clip], duration: TimeInterval, effects: [VideoEffect] = []) {
+public struct CompositeClip: VideoClip {
+    public init(_ clips: [VideoClip], duration: TimeInterval, effects: [VideoEffect] = []) {
         self.clips = clips
         self.duration = duration
         self.effects = effects
     }
 
-    public var clips: [Clip]
+    public var clips: [VideoClip]
     public let duration: TimeInterval
     public let effects: [VideoEffect]
 
@@ -24,7 +24,7 @@ public struct CompositeClip: Clip {
         }
     }
 
-    public func render(nextClip: Clip?, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> CIImage {
+    public func render(nextClip: VideoClip?, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> CIImage {
         guard let firstClip = clips.first else {
             return .clear
         }

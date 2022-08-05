@@ -7,7 +7,7 @@
 
 import UIKit
 
-public struct ImageClip: Clip {
+public struct ImageClip: VideoClip {
     public init(_ image: UIImage, scalingMode: UIImage.ScalingMode? = nil, duration: TimeInterval, effects: [VideoEffect]) {
         self.rawImage = image
         self.scalingMode = scalingMode

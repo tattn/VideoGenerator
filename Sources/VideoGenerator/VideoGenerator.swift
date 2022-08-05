@@ -25,47 +25,75 @@ public struct VideoGenerator {
         let outputURL = destination ?? URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("videogen.mp4")
         try? FileManager.default.removeItem(at: outputURL)
 
-        let (writer, videoWriterAdaptor) = try makeWriter(configuration: configuration, outputURL: outputURL)
-
-        writer.startWriting()
-        writer.startSession(atSourceTime: .zero)
+        let (writer, videoWriterAdaptor, audioWriterInput) = try makeWriter(configuration: configuration, outputURL: outputURL)
 
         await Task.detached {
             var clips = clips
             for index in clips.indices {
                 clips[index].prepare(with: configuration)
             }
-            
-            var totalFrameCount = CMTimeValue(0)
 
-            for (clip, nextClip) in zip(clips, Array(clips.dropFirst()) + [nil]) {
-                let numberOfFrames = Int(clip.duration * TimeInterval(configuration.fps))
+            writer.startWriting()
+            writer.startSession(atSourceTime: .zero)
 
-                for frame in 0..<numberOfFrames {
-                    autoreleasepool {
-                        let effected = clip.render(nextClip: nextClip, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: frame)
-                        context.render(effected, to: pixelBuffer!)
-                    }
+            await writeAudio(clips: clips, input: audioWriterInput)
+            await writeVideo(clips: clips, adaptor: videoWriterAdaptor)
 
-                    while !videoWriterAdaptor.assetWriterInput.isReadyForMoreMediaData {
-                        try? await Task.sleep(nanoseconds: NSEC_PER_MSEC * 10)
-                    }
-
-                    let time = CMTime(value: totalFrameCount * 600 / Int64(configuration.fps), timescale: CMTimeScale(600))
-                    videoWriterAdaptor.append(pixelBuffer!, withPresentationTime: time)
-
-                    totalFrameCount += 1
-                }
-            }
+            await writer.finishWriting()
         }.value
 
-        await writer.finishWriting()
         try await VideoSaver().save(destination: outputURL)
     }
 
-    func makeWriter(configuration: VideoConfiguration, outputURL: URL) throws -> (AVAssetWriter, AVAssetWriterInputPixelBufferAdaptor) {
+    private func writeAudio(clips: [Clip], input: AVAssetWriterInput) async {
+        var totalFrameCount = 0
+
+        for clip in clips {
+            let timestamp = configuration.time(currentFrame: totalFrameCount)
+
+            await Task { // instead of autoreleasepool
+                if let sampleBuffer = try? await clip.audio?.render().sampleBuffer(presentationTimeStamp: timestamp) {
+                    let duration = sampleBuffer.duration
+                    input.append(sampleBuffer)
+                    let restOfFrames = Int(Double(duration.timescale) * max(0, clip.duration - duration.seconds))
+                    input.append(.createSilentAudio(presentationTimeStamp: timestamp + duration, numberOfFrames: restOfFrames, sampleRate: Float64(duration.timescale))!)
+                } else {
+                    input.append(.createSilentAudio(presentationTimeStamp: timestamp, numberOfFrames: Int(44100 * clip.duration))!)
+                }
+            }.value
+
+            totalFrameCount += Int(clip.duration * TimeInterval(configuration.fps))
+        }
+        input.markAsFinished()
+    }
+
+    private func writeVideo(clips: [Clip], adaptor: AVAssetWriterInputPixelBufferAdaptor) async {
+        var totalFrameCount = 0
+
+        for (clip, nextClip) in zip(clips, Array(clips.dropFirst()) + [nil]) {
+            let numberOfFrames = Int(clip.duration * TimeInterval(configuration.fps))
+
+            for frame in 0..<numberOfFrames {
+                autoreleasepool {
+                    let effected = clip.video.render(nextClip: nextClip?.video, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: frame)
+                    context.render(effected, to: pixelBuffer!)
+
+                    let time = configuration.time(currentFrame: totalFrameCount)
+                    adaptor.append(pixelBuffer!, withPresentationTime: time)
+
+                    totalFrameCount += 1
+                }
+
+                while !adaptor.assetWriterInput.isReadyForMoreMediaData {
+                    try? await Task.sleep(nanoseconds: NSEC_PER_MSEC * 50)
+                }
+            }
+        }
+    }
+
+    func makeWriter(configuration: VideoConfiguration, outputURL: URL) throws -> (AVAssetWriter, AVAssetWriterInputPixelBufferAdaptor, AVAssetWriterInput) {
         let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
-        let writerVideoInput = AVAssetWriterInput(
+        let videoWriterInput = AVAssetWriterInput(
             mediaType: .video,
             outputSettings: [
                 AVVideoCodecKey: AVVideoCodecType.h264,
@@ -81,12 +109,21 @@ public struct VideoGenerator {
                 ],
             ]
         )
-        let videoWriterAdaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: writerVideoInput)
+        let videoWriterAdaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: videoWriterInput)
 
-        writerVideoInput.expectsMediaDataInRealTime = false
-        writer.add(writerVideoInput)
+        let audioWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVNumberOfChannelsKey: 1,
+            AVSampleRateKey: 44100,
+            AVEncoderBitRateKey: 128000
+        ])
 
-        return (writer, videoWriterAdaptor)
+        videoWriterInput.expectsMediaDataInRealTime = false
+        audioWriterInput.expectsMediaDataInRealTime = false
+        writer.add(videoWriterInput)
+        writer.add(audioWriterInput)
+
+        return (writer, videoWriterAdaptor, audioWriterInput)
     }
 }
 
@@ -103,5 +140,9 @@ public struct VideoConfiguration: Sendable {
 
     var size: CGSize {
         .init(width: width, height: height)
+    }
+
+    func time(currentFrame: Int) -> CMTime {
+        CMTime(value: Int64(currentFrame * 600 / fps), timescale: CMTimeScale(600))
     }
 }

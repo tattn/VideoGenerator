@@ -7,7 +7,7 @@
 
 import UIKit
 
-public struct TextClip: Clip, @unchecked Sendable {
+public struct TextClip: VideoClip, @unchecked Sendable {
     public init(
         _ text: String,
         font: UIFont = .systemFont(ofSize: 128, weight: .heavy),

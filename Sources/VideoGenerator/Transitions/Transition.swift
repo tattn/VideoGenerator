@@ -7,11 +7,11 @@
 
 import Foundation
 
-public protocol Transition: Clip {
+public protocol Transition: VideoClip {
 }
 
-public extension Clip {
-    func fade(duration: TimeInterval) -> some Clip {
+public extension VideoClip {
+    func fade(duration: TimeInterval) -> some VideoClip {
         FadeTransition(duration: duration, fromClip: self)
     }
 }

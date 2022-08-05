@@ -11,6 +11,7 @@ import VideoGenerator
 struct ContentView: View {
     @State var videoGenerator = VideoGenerator()
     @State var isGenerating = false
+    @State var errorOccurred = false
 
     var sampleImages: [UIImage] {
         let urls = [
@@ -23,6 +24,9 @@ struct ContentView: View {
     }
 
     var body: some View {
+        if errorOccurred {
+            Image(systemName: "exclamationmark.triangle")
+        }
         if isGenerating {
             ProgressView()
                 .progressViewStyle(.circular)
@@ -30,7 +34,11 @@ struct ContentView: View {
             Button("Generate") {
                 isGenerating = true
                 Task {
-                    try await generate()
+                    do {
+                        try await generate()
+                    } catch {
+                        errorOccurred = true
+                    }
                     isGenerating = false
                 }
             }
@@ -39,23 +47,29 @@ struct ContentView: View {
 
     func generate() async throws {
         try await videoGenerator.generate([
-            CompositeClip([
-                ImageClip(sampleImages[0], scalingMode: .aspectFill, duration: 2, effects: [
-                    PerlinNoiseEffect()
-                ]),
-                TextClip("こんにちは", duration: 1, effects: [
-                    RotateEffect(),
-                ]),
-            ], duration: 2).fade(duration: 0.5),
-            CompositeClip([
-                ImageClip(sampleImages[1], scalingMode: .aspectFill, duration: 1, effects: [
-                    PerlinNoiseEffect(),
-                ]),
-                TextClip("にゃ〜", duration: 1, effects: [
-                    RotateEffect(speed: .pi * 2, direction: .left),
-                    TransformEffect(matrix: .init(translationX: -200, y: -100))
-                ]),
-            ], duration: 1),
+            Clip(
+                video: CompositeClip([
+                    ImageClip(sampleImages[0], scalingMode: .aspectFill, duration: 2, effects: [
+                        PerlinNoiseEffect()
+                    ]),
+                    TextClip("こんにちは", duration: 1, effects: [
+                        RotateEffect(),
+                    ]),
+                ], duration: 2).fade(duration: 0.5),
+                audio: SpeechClip("こんにちは")
+            ),
+            Clip(
+                video: CompositeClip([
+                    ImageClip(sampleImages[1], scalingMode: .aspectFill, duration: 1, effects: [
+                        PerlinNoiseEffect(),
+                    ]),
+                    TextClip("にゃ〜", duration: 1, effects: [
+                        RotateEffect(speed: .pi * 2, direction: .left),
+                        TransformEffect(matrix: .init(translationX: -200, y: -100))
+                    ]),
+                ], duration: 1),
+                audio: SpeechClip("猫だよー")
+            ),
         ])
     }
 }

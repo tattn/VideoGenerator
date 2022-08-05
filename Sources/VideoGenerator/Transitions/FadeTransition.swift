@@ -9,14 +9,14 @@ import UIKit
 import CoreImage.CIFilterBuiltins
 
 public struct FadeTransition: Transition {
-    init(duration: TimeInterval, fromClip: Clip) {
+    init(duration: TimeInterval, fromClip: VideoClip) {
         self.fromClip = fromClip
         self.effects = fromClip.effects
         self.transitionDuration = duration
     }
 
     public var duration: TimeInterval { fromClip.duration }
-    public var fromClip: Clip
+    public var fromClip: VideoClip
     public var effects: [VideoEffect]
 
     private let transitionDuration: TimeInterval
@@ -25,7 +25,7 @@ public struct FadeTransition: Transition {
         fromClip.prepare(with: configuration)
     }
 
-    public func render(nextClip: Clip?, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> CIImage {
+    public func render(nextClip: VideoClip?, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> CIImage {
         let fromImage = fromClip.render(nextClip: nextClip, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: currentFrame)
         let elapsed = self.elapsed(numberOfFrames: numberOfFrames, currentFrame: currentFrame)
         guard elapsed >= duration - transitionDuration, let nextClip = nextClip else {
