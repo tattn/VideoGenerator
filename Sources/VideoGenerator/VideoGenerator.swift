@@ -21,7 +21,7 @@ public struct VideoGenerator {
 
     private var pixelBuffer: CVPixelBuffer?
 
-    public func generate(_ clips: [Clip], destination: URL? = nil) async throws {
+    public func generate(_ clips: [Clip], backgroundMusic destination: URL? = nil) async throws {
         let outputURL = destination ?? URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("videogen.mp4")
         try? FileManager.default.removeItem(at: outputURL)
 
@@ -56,7 +56,9 @@ public struct VideoGenerator {
                     let duration = sampleBuffer.duration
                     input.append(sampleBuffer)
                     let restOfFrames = Int(Double(duration.timescale) * max(0, clip.duration - duration.seconds))
-                    input.append(.createSilentAudio(presentationTimeStamp: timestamp + duration, numberOfFrames: restOfFrames, sampleRate: Float64(duration.timescale))!)
+                    if restOfFrames > 0 {
+                        input.append(.createSilentAudio(presentationTimeStamp: timestamp + duration, numberOfFrames: restOfFrames, sampleRate: Float64(duration.timescale))!)
+                    }
                 } else {
                     input.append(.createSilentAudio(presentationTimeStamp: timestamp, numberOfFrames: Int(44100 * clip.duration))!)
                 }
@@ -74,15 +76,14 @@ public struct VideoGenerator {
             let numberOfFrames = Int(clip.duration * TimeInterval(configuration.fps))
 
             for frame in 0..<numberOfFrames {
-                autoreleasepool {
-                    let effected = clip.video.render(nextClip: nextClip?.video, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: frame)
+                await Task { // insted of autoreleasepool
+                    let effected = await clip.video.render(nextClip: nextClip?.video, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: frame)
                     context.render(effected, to: pixelBuffer!)
+                }.value
 
-                    let time = configuration.time(currentFrame: totalFrameCount)
-                    adaptor.append(pixelBuffer!, withPresentationTime: time)
-
-                    totalFrameCount += 1
-                }
+                let time = configuration.time(currentFrame: totalFrameCount)
+                adaptor.append(pixelBuffer!, withPresentationTime: time)
+                totalFrameCount += 1
 
                 while !adaptor.assetWriterInput.isReadyForMoreMediaData {
                     try? await Task.sleep(nanoseconds: NSEC_PER_MSEC * 50)

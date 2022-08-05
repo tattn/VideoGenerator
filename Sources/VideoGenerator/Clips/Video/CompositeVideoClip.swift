@@ -1,5 +1,5 @@
 //
-//  CompositeClip.swift
+//  CompositeVideoClip.swift
 //  
 //
 //  Created by Tatsuya Tanaka on 2022/08/04.
@@ -7,7 +7,7 @@
 
 import CoreImage
 
-public struct CompositeClip: VideoClip {
+public struct CompositeVideoClip: VideoClip {
     public init(_ clips: [VideoClip], duration: TimeInterval, effects: [VideoEffect] = []) {
         self.clips = clips
         self.duration = duration
@@ -24,17 +24,16 @@ public struct CompositeClip: VideoClip {
         }
     }
 
-    public func render(nextClip: VideoClip?, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) -> CIImage {
+    public func render(nextClip: VideoClip?, configuration: VideoConfiguration, numberOfFrames: Int, currentFrame: Int) async -> CIImage {
         guard let firstClip = clips.first else {
             return .clear
         }
 
-        let firstImage = firstClip.render(nextClip: nextClip, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: currentFrame)
-        return clips.dropFirst().reduce(firstImage) { partialResult, clip in
-            autoreleasepool {
-                clip.render(nextClip: nextClip, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: currentFrame)
-                    .composited(over: partialResult)
-            }
+        var result = await firstClip.render(nextClip: nextClip, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: currentFrame)
+        for clip in clips.dropFirst() {
+            result = await clip.render(nextClip: nextClip, configuration: configuration, numberOfFrames: numberOfFrames, currentFrame: currentFrame)
+                .composited(over: result)
         }
+        return result
     }
 }

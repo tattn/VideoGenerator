@@ -11,3 +11,5 @@ import AVKit
 public protocol AudioClip {
     func render() async throws -> AVAudioPCMBuffer
 }
+
+let defaultAudioFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16, sampleRate: 44100, channels: 1, interleaved: false)!

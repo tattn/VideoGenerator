@@ -22,6 +22,28 @@ extension AVAudioPCMBuffer {
 }
 
 extension AVAudioPCMBuffer {
+    func convertToDefaultFormat() throws -> AVAudioPCMBuffer {
+        guard format.sampleRate != defaultAudioFormat.sampleRate || format.commonFormat != defaultAudioFormat.commonFormat else {
+            return self
+        }
+
+        let convertedBuffer = AVAudioPCMBuffer(
+            pcmFormat: defaultAudioFormat,
+            frameCapacity: AVAudioFrameCount(Double(frameCapacity) / Double(format.sampleRate) * defaultAudioFormat.sampleRate)
+        )!
+
+        let converter = AVAudioConverter(from: format, to: defaultAudioFormat)!
+        var error: NSError?
+        converter.convert(to: convertedBuffer, error: &error) { inNumPackets, outStatus in
+            outStatus.pointee = .haveData
+            return self
+        }
+
+        return convertedBuffer
+    }
+}
+
+extension AVAudioPCMBuffer {
     func append(_ buffer: AVAudioPCMBuffer) {
         append(buffer, startingFrame: 0, frameCount: buffer.frameLength)
     }

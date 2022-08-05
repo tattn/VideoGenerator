@@ -13,7 +13,6 @@ public struct SpeechClip: AudioClip {
     }
 
     let text: String
-    let format = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16, sampleRate: 44100, channels: 1, interleaved: false)!
 
     public func render() async throws -> AVAudioPCMBuffer {
         let utterance = AVSpeechUtterance(string: text)
@@ -33,17 +32,11 @@ public struct SpeechClip: AudioClip {
 
                 if pcmBuffer.frameLength == 0 {
                     let result = AVAudioPCMBuffer(concatenating: buffers)!
-
-                    let convertedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(Double(result.frameCapacity) / Double(result.format.sampleRate) * format.sampleRate))!
-
-                    let converter = AVAudioConverter(from: result.format, to: format)!
-                    var error: NSError?
-                    converter.convert(to: convertedBuffer, error: &error) { inNumPackets, outStatus in
-                        outStatus.pointee = .haveData
-                        return result
+                    do {
+                        continuation.resume(returning: try result.convertToDefaultFormat())
+                    } catch {
+                        continuation.resume(throwing: error)
                     }
-
-                    continuation.resume(returning: convertedBuffer)
                 }
             }
         }

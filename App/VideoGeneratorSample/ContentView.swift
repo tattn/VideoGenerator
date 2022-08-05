@@ -48,7 +48,7 @@ struct ContentView: View {
     func generate() async throws {
         try await videoGenerator.generate([
             Clip(
-                video: CompositeClip([
+                video: CompositeVideoClip([
                     ImageClip(sampleImages[0], scalingMode: .aspectFill, duration: 2, effects: [
                         PerlinNoiseEffect()
                     ]),
@@ -59,7 +59,7 @@ struct ContentView: View {
                 audio: SpeechClip("こんにちは")
             ),
             Clip(
-                video: CompositeClip([
+                video: CompositeVideoClip([
                     ImageClip(sampleImages[1], scalingMode: .aspectFill, duration: 1, effects: [
                         PerlinNoiseEffect(),
                     ]),

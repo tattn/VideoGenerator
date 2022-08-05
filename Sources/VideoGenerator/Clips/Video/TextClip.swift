@@ -39,7 +39,7 @@ public struct TextClip: VideoClip, @unchecked Sendable {
         self.configuration = configuration
     }
 
-    public func image(elapsed: TimeInterval) -> CIImage {
+    public func image(elapsed: TimeInterval) async -> CIImage {
         let center = CGPoint(x: configuration.width / 2, y: configuration.height / 2)
 
         let format = UIGraphicsImageRendererFormat()

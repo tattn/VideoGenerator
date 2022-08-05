@@ -29,7 +29,7 @@ public struct ImageClip: VideoClip {
         }
     }
 
-    public func image(elapsed: TimeInterval) -> CIImage {
+    public func image(elapsed: TimeInterval) async -> CIImage {
         image
     }
 }
