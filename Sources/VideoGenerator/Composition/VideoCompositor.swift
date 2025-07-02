@@ -347,6 +347,9 @@ public enum VideoGeneratorError: LocalizedError {
     case videoFrameExtractionFailed
     case renderingFailed
     case unsupportedMediaType
+    case metalNotAvailable
+    case metalResourceCreationFailed
+    case textureCreationFailed
     
     public var errorDescription: String? {
         switch self {
@@ -358,6 +361,12 @@ public enum VideoGeneratorError: LocalizedError {
             return "Failed to render frame"
         case .unsupportedMediaType:
             return "Unsupported media type"
+        case .metalNotAvailable:
+            return "Metal is not available on this device"
+        case .metalResourceCreationFailed:
+            return "Failed to create Metal resources"
+        case .textureCreationFailed:
+            return "Failed to create Metal texture"
         }
     }
 }
