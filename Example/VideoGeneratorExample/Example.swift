@@ -50,6 +50,9 @@ func createExampleVideo(to outputURL: URL) async throws {
         ),
         frame: CGRect(x: 0, y: 0, width: timeline.size.width, height: timeline.size.height),
         transform: .identity,
+        effects: [
+            CameraShakeEffect.subtle
+        ],
         opacity: 0.9
     )
     overlayTrack.clips.append(titleClip)

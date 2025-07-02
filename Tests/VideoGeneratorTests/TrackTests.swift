@@ -93,7 +93,7 @@ struct TimelineTests {
     
     @Test("Timeline track management")
     @MainActor func testTimelineTrackManagement() async {
-        let timeline = Timeline()
+        let timeline = Timeline(size: CGSize(width: 1920, height: 1080))
         
         let videoTrack = Track(trackType: .video)
         let audioTrack = Track(trackType: .audio)
@@ -118,7 +118,7 @@ struct TimelineTests {
     
     @Test("Timeline duration update")
     @MainActor func testTimelineDurationUpdate() async {
-        let timeline = Timeline()
+        let timeline = Timeline(size: CGSize(width: 1920, height: 1080))
         
         var track1 = Track(trackType: .video)
         track1.clips = [
