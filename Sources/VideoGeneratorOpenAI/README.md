@@ -1,28 +1,27 @@
 # VideoGeneratorOpenAI
 
-A Swift package extension that adds AI-powered Timeline generation capabilities to VideoGenerator using OpenAI's API with Structured Output.
+A Swift package that integrates OpenAI's API with VideoGenerator to automatically generate video timelines from text prompts.
 
 ## Features
 
-- Generate Timeline instances from text prompts using OpenAI's GPT models
-- Structured Output ensures generated timelines conform to the VideoGenerator schema
-- Support for custom OpenAI-compatible endpoints (Azure OpenAI, local LLMs, etc.)
-- Seamless integration with VideoGenerator's export functionality
+- Generate video timelines using OpenAI's structured output
+- Automatic image generation using DALL-E
+- Strict JSON schema validation
+- Thread-safe actor-based architecture
+- Swift 6 concurrency support
 
 ## Installation
 
-Add VideoGeneratorOpenAI as a dependency in your `Package.swift`:
+Add VideoGeneratorOpenAI to your Swift package dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/your-repo/VideoGenerator.git", from: "1.0.0")
+    .package(url: "https://github.com/yourusername/VideoGenerator.git", from: "1.0.0")
 ],
 targets: [
     .target(
         name: "YourTarget",
-        dependencies: [
-            .product(name: "VideoGeneratorOpenAI", package: "VideoGenerator")
-        ]
+        dependencies: ["VideoGeneratorOpenAI"]
     )
 ]
 ```
@@ -33,46 +32,93 @@ targets: [
 
 ```swift
 import VideoGeneratorOpenAI
-import VideoGenerator
+
+// Create a timeline generator
+let generator = TimelineGenerator(apiKey: "your-openai-api-key")
 
 // Generate a timeline from a prompt
-let generator = TimelineGenerator(apiKey: "your-openai-api-key")
 let timeline = try await generator.generateTimeline(
-    from: "Create a 10-second video with a blue background and white text saying 'Hello World' in the center"
+    from: "Create a 30-second video with animated text saying 'Hello World' over a blue background"
 )
-
-// Export the timeline to video using VideoGenerator
-let exporter = try await VideoExporter()
-let settings = ExportSettings(
-    outputURL: URL(fileURLWithPath: "/path/to/output.mp4"),
-    videoCodec: .h264,
-    audioCodec: .aac,
-    resolution: timeline.size,
-    bitrate: 8_000_000,
-    frameRate: timeline.frameRate,
-    preset: .high
-)
-let videoURL = try await exporter.export(timeline: timeline, settings: settings)
 ```
 
-### Custom Endpoint Configuration
+### Image Generation Options
+
+VideoGeneratorOpenAI supports automatic image generation using OpenAI's DALL-E API. You can control image generation behavior using `ImageGenerationOptions`:
 
 ```swift
-let configuration = OpenAIClient.Configuration(
-    apiKey: "your-api-key",
-    baseURL: URL(string: "https://your-custom-endpoint.com/v1")!,
-    model: "gpt-4.1"
+// Enable image generation with custom settings
+let imageOptions = ImageGenerationOptions(
+    maxImages: 3,        // Maximum number of images to generate (default: 0 = disabled)
+    model: "dall-e-3",   // Image generation model (default: "dall-e-3")
+    size: "1024x1024",   // Image size (default: "1024x1024")
+    quality: "standard"  // Image quality: "standard" or "hd" (default: "standard")
 )
-let generator = TimelineGenerator(configuration: configuration)
-let timeline = try await generator.generateTimeline(from: "Create a video presentation")
+
+let generator = TimelineGenerator(
+    apiKey: "your-openai-api-key",
+    imageGenerationOptions: imageOptions
+)
+
+// When generating timelines, the AI can now create images
+let timeline = try await generator.generateTimeline(
+    from: "Create a video with a beautiful sunset image followed by text overlay"
+)
 ```
 
-## Schema
+#### Image Generation Parameters
 
-The AI generates timelines conforming to the VideoGenerator Timeline JSON Schema located at `Resources/timeline.schema.json`. This ensures all generated content is valid and can be properly rendered.
+- **`maxImages`**: Controls the maximum number of images that can be generated per timeline
+  - `0` (default): Image generation is disabled
+  - `> 0`: Image generation is enabled with the specified limit
+  
+- **`model`**: The DALL-E model to use
+  - `"dall-e-3"` (default): Latest DALL-E model with better quality
+  - `"dall-e-2"`: Previous generation model
+  
+- **`size`**: The size of generated images
+  - `"1024x1024"` (default): Square HD images
+  - `"1024x1792"`: Portrait HD images (DALL-E 3 only)
+  - `"1792x1024"`: Landscape HD images (DALL-E 3 only)
+  - `"512x512"`: Smaller square images
+  
+- **`quality`**: The quality of generated images
+  - `"standard"` (default): Standard quality
+  - `"hd"`: Higher quality (DALL-E 3 only)
+
+### Advanced Configuration
+
+```swift
+// Custom configuration with all options
+let config = OpenAIClient.Configuration(
+    apiKey: "your-openai-api-key",
+    baseURL: URL(string: "https://api.openai.com/v1")!,
+    model: "gpt-4-turbo-preview",
+    imageGenerationOptions: ImageGenerationOptions(
+        maxImages: 5,
+        model: "dall-e-3",
+        size: "1792x1024",
+        quality: "hd"
+    )
+)
+
+let generator = TimelineGenerator(configuration: config)
+```
+
+## How It Works
+
+1. **Prompt Processing**: Your text prompt is sent to OpenAI's chat completion API
+2. **Structured Output**: The AI generates a timeline following a strict JSON schema
+3. **Image Generation**: If enabled, the AI marks images with `GENERATE_IMAGE:` prefix
+4. **Image Creation**: Marked images are automatically generated using DALL-E
+5. **Timeline Assembly**: The final timeline with all media items is returned
 
 ## Requirements
 
 - iOS 17.0+ / macOS 14.0+
-- Swift 6.0
-- OpenAI API key or compatible endpoint
+- Swift 6.0+
+- OpenAI API key
+
+## License
+
+See the main VideoGenerator package license.

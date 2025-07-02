@@ -45,5 +45,13 @@ let package = Package(
                 .enableExperimentalFeature("StrictConcurrency")
             ]
         ),
+        .testTarget(
+            name: "VideoGeneratorOpenAITests",
+            dependencies: ["VideoGeneratorOpenAI"],
+            swiftSettings: [
+                .swiftLanguageMode(.v6),
+                .enableExperimentalFeature("StrictConcurrency")
+            ]
+        ),
     ]
 )
