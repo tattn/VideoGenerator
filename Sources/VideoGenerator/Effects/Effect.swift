@@ -23,7 +23,7 @@ public struct EffectParameters: Sendable {
         get { storage[key]?.value as? T }
     }
     
-    var storageDict: [String: SendableValue] {
+    public var storageDict: [String: SendableValue] {
         storage
     }
 }

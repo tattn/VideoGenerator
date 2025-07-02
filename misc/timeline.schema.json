@@ -1,0 +1,637 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://videogenerator.app/schemas/timeline.schema.json",
+  "title": "VideoGenerator Timeline Schema",
+  "description": "Schema for VideoGenerator timeline JSON format",
+  "type": "object",
+  "required": ["id", "tracks", "size", "frameRate", "backgroundColor"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for the timeline"
+    },
+    "tracks": {
+      "type": "array",
+      "description": "Array of tracks in the timeline",
+      "items": {
+        "$ref": "#/definitions/track"
+      }
+    },
+    "size": {
+      "$ref": "#/definitions/size",
+      "description": "Output size of the video"
+    },
+    "frameRate": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120,
+      "description": "Frame rate of the video"
+    },
+    "backgroundColor": {
+      "$ref": "#/definitions/color",
+      "description": "Background color of the video"
+    }
+  },
+  "definitions": {
+    "track": {
+      "type": "object",
+      "required": ["id", "trackType", "clips", "isEnabled"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the track"
+        },
+        "trackType": {
+          "type": "string",
+          "enum": ["video", "audio", "overlay", "effect"],
+          "description": "Type of the track"
+        },
+        "clips": {
+          "type": "array",
+          "description": "Array of clips in the track",
+          "items": {
+            "$ref": "#/definitions/clip"
+          }
+        },
+        "isEnabled": {
+          "type": "boolean",
+          "description": "Whether the track is enabled"
+        },
+        "volume": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Volume level for audio tracks"
+        },
+        "opacity": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Opacity level for video tracks"
+        }
+      }
+    },
+    "clip": {
+      "type": "object",
+      "required": ["id", "mediaItem", "timeRange", "frame", "contentMode", "effects", "opacity"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the clip"
+        },
+        "mediaItem": {
+          "$ref": "#/definitions/mediaItem"
+        },
+        "timeRange": {
+          "$ref": "#/definitions/timeRange"
+        },
+        "frame": {
+          "$ref": "#/definitions/rect"
+        },
+        "contentMode": {
+          "type": "string",
+          "enum": ["scaleToFill", "aspectFit", "aspectFill"],
+          "description": "How the content should be scaled within the frame"
+        },
+        "effects": {
+          "type": "array",
+          "description": "Array of effects applied to the clip",
+          "items": {
+            "$ref": "#/definitions/effect"
+          }
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Opacity of the clip"
+        }
+      }
+    },
+    "mediaItem": {
+      "type": "object",
+      "required": ["id", "type", "duration"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the media item"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["video", "image", "text", "audio", "shape"],
+          "description": "Type of media item"
+        },
+        "duration": {
+          "$ref": "#/definitions/time"
+        },
+        "url": {
+          "type": ["string", "null"],
+          "description": "URL/path for video or audio media"
+        },
+        "imageData": {
+          "type": ["string", "null"],
+          "description": "Base64 encoded image data"
+        },
+        "text": {
+          "type": ["string", "null"],
+          "description": "Text content for text media items"
+        },
+        "font": {
+          "type": ["object", "null"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Font name"
+            },
+            "size": {
+              "type": "number",
+              "minimum": 1,
+              "description": "Font size"
+            }
+          },
+          "required": ["name", "size"]
+        },
+        "color": {
+          "oneOf": [
+            {"$ref": "#/definitions/color"},
+            {"type": "null"}
+          ],
+          "description": "Text color"
+        },
+        "strokes": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/definitions/textStroke"
+          },
+          "description": "Text strokes/outlines"
+        },
+        "shadow": {
+          "oneOf": [
+            {"$ref": "#/definitions/textShadow"},
+            {"type": "null"}
+          ],
+          "description": "Text shadow"
+        },
+        "behavior": {
+          "type": ["string", "null"],
+          "enum": ["wrap", "truncate", "autoScale", null],
+          "description": "Text behavior"
+        },
+        "alignment": {
+          "type": ["string", "null"],
+          "enum": ["left", "center", "right", "justified", "natural", null],
+          "description": "Text alignment"
+        },
+        "shapeType": {
+          "oneOf": [
+            {"$ref": "#/definitions/shapeType"},
+            {"type": "null"}
+          ],
+          "description": "Type of shape"
+        },
+        "fillColor": {
+          "oneOf": [
+            {"$ref": "#/definitions/color"},
+            {"type": "null"}
+          ],
+          "description": "Fill color for shapes"
+        },
+        "strokeColor": {
+          "oneOf": [
+            {"$ref": "#/definitions/color"},
+            {"type": "null"}
+          ],
+          "description": "Stroke color for shapes"
+        },
+        "strokeWidth": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Stroke width for shapes"
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"type": {"const": "video"}}},
+          "then": {"required": ["url"]}
+        },
+        {
+          "if": {"properties": {"type": {"const": "image"}}},
+          "then": {"required": ["imageData"]}
+        },
+        {
+          "if": {"properties": {"type": {"const": "text"}}},
+          "then": {"required": ["text", "font", "color", "behavior", "alignment"]}
+        },
+        {
+          "if": {"properties": {"type": {"const": "audio"}}},
+          "then": {"required": ["url"]}
+        },
+        {
+          "if": {"properties": {"type": {"const": "shape"}}},
+          "then": {"required": ["shapeType", "fillColor", "strokeColor", "strokeWidth"]}
+        }
+      ]
+    },
+    "effect": {
+      "type": "object",
+      "required": ["id", "type", "parameters"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the effect"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of effect (e.g., brightness, contrast, blur, etc.)"
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Effect parameters",
+          "additionalProperties": {
+            "$ref": "#/definitions/sendableValue"
+          }
+        }
+      }
+    },
+    "sendableValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["double"],
+          "properties": {"double": {"type": "number"}},
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["float"],
+          "properties": {"float": {"type": "number"}},
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["int"],
+          "properties": {"int": {"type": "integer"}},
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["bool"],
+          "properties": {"bool": {"type": "boolean"}},
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["string"],
+          "properties": {"string": {"type": "string"}},
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["color"],
+          "properties": {"color": {"$ref": "#/definitions/color"}},
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["size"],
+          "properties": {"size": {"$ref": "#/definitions/size"}},
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["point"],
+          "properties": {"point": {"$ref": "#/definitions/point"}},
+          "additionalProperties": false
+        }
+      ]
+    },
+    "time": {
+      "type": "object",
+      "required": ["seconds", "preferredTimescale"],
+      "properties": {
+        "seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Time in seconds"
+        },
+        "preferredTimescale": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Preferred timescale for time representation"
+        }
+      }
+    },
+    "timeRange": {
+      "type": "object",
+      "required": ["start", "duration"],
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/time"
+        },
+        "duration": {
+          "$ref": "#/definitions/time"
+        }
+      }
+    },
+    "size": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Width in pixels"
+        },
+        "height": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Height in pixels"
+        }
+      }
+    },
+    "rect": {
+      "type": "object",
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": {
+          "type": "number",
+          "description": "X coordinate"
+        },
+        "y": {
+          "type": "number",
+          "description": "Y coordinate"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Width"
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Height"
+        }
+      }
+    },
+    "point": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": {
+          "type": "number",
+          "description": "X coordinate"
+        },
+        "y": {
+          "type": "number",
+          "description": "Y coordinate"
+        }
+      }
+    },
+    "color": {
+      "type": "object",
+      "required": ["red", "green", "blue", "alpha"],
+      "properties": {
+        "red": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Red component (0-1)"
+        },
+        "green": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Green component (0-1)"
+        },
+        "blue": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Blue component (0-1)"
+        },
+        "alpha": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Alpha component (0-1)"
+        }
+      }
+    },
+    "textStroke": {
+      "type": "object",
+      "required": ["color", "width"],
+      "properties": {
+        "color": {
+          "$ref": "#/definitions/color"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Stroke width"
+        }
+      }
+    },
+    "textShadow": {
+      "type": "object",
+      "required": ["color", "offset", "blur"],
+      "properties": {
+        "color": {
+          "$ref": "#/definitions/color"
+        },
+        "offset": {
+          "$ref": "#/definitions/size"
+        },
+        "blur": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Shadow blur radius"
+        }
+      }
+    },
+    "shapeType": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["rectangle", "circle", "ellipse", "triangle"]
+        },
+        {
+          "type": "object",
+          "required": ["roundedRectangle"],
+          "properties": {
+            "roundedRectangle": {
+              "type": "object",
+              "required": ["cornerRadius"],
+              "properties": {
+                "cornerRadius": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["polygon"],
+          "properties": {
+            "polygon": {
+              "type": "object",
+              "required": ["sides"],
+              "properties": {
+                "sides": {
+                  "type": "integer",
+                  "minimum": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["star"],
+          "properties": {
+            "star": {
+              "type": "object",
+              "required": ["points", "innerRadius"],
+              "properties": {
+                "points": {
+                  "type": "integer",
+                  "minimum": 3
+                },
+                "innerRadius": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["path"],
+          "properties": {
+            "path": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/pathElement"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "pathElement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["moveTo"],
+          "properties": {
+            "moveTo": {
+              "type": "object",
+              "required": ["x", "y"],
+              "properties": {
+                "x": {"type": "number"},
+                "y": {"type": "number"}
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["lineTo"],
+          "properties": {
+            "lineTo": {
+              "type": "object",
+              "required": ["x", "y"],
+              "properties": {
+                "x": {"type": "number"},
+                "y": {"type": "number"}
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["quadCurveTo"],
+          "properties": {
+            "quadCurveTo": {
+              "type": "object",
+              "required": ["x1", "y1", "x", "y"],
+              "properties": {
+                "x1": {"type": "number"},
+                "y1": {"type": "number"},
+                "x": {"type": "number"},
+                "y": {"type": "number"}
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["curveTo"],
+          "properties": {
+            "curveTo": {
+              "type": "object",
+              "required": ["x1", "y1", "x2", "y2", "x", "y"],
+              "properties": {
+                "x1": {"type": "number"},
+                "y1": {"type": "number"},
+                "x2": {"type": "number"},
+                "y2": {"type": "number"},
+                "x": {"type": "number"},
+                "y": {"type": "number"}
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["arc"],
+          "properties": {
+            "arc": {
+              "type": "object",
+              "required": ["center", "radius", "startAngle", "endAngle", "clockwise"],
+              "properties": {
+                "center": {"$ref": "#/definitions/point"},
+                "radius": {"type": "number", "minimum": 0},
+                "startAngle": {"type": "number"},
+                "endAngle": {"type": "number"},
+                "clockwise": {"type": "boolean"}
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["addRect"],
+          "properties": {
+            "addRect": {"$ref": "#/definitions/rect"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["addEllipse"],
+          "properties": {
+            "addEllipse": {
+              "type": "object",
+              "required": ["in"],
+              "properties": {
+                "in": {"$ref": "#/definitions/rect"}
+              }
+            }
+          }
+        },
+        {
+          "type": "string",
+          "const": "closeSubpath"
+        }
+      ]
+    }
+  }
+}

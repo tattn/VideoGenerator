@@ -1,0 +1,267 @@
+{
+  "backgroundColor" : {
+    "alpha" : 1,
+    "blue" : 0,
+    "green" : 0,
+    "red" : 0
+  },
+  "frameRate" : 30,
+  "id" : "550e8400-e29b-41d4-a716-446655440000",
+  "size" : {
+    "height" : 1080,
+    "width" : 1920
+  },
+  "tracks" : [
+    {
+      "clips" : [
+        {
+          "contentMode" : "aspectFit",
+          "effects" : [],
+          "frame" : {
+            "height" : 1080,
+            "width" : 1920,
+            "x" : 0,
+            "y" : 0
+          },
+          "id" : "clip-001",
+          "mediaItem" : {
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 5
+            },
+            "id" : "media-001",
+            "type" : "video",
+            "url" : "/path/to/video1.mp4"
+          },
+          "opacity" : 1,
+          "timeRange" : {
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 5
+            },
+            "start" : {
+              "preferredTimescale" : 30,
+              "seconds" : 0
+            }
+          }
+        },
+        {
+          "contentMode" : "aspectFit",
+          "effects" : [
+            {
+              "id" : "effect-001",
+              "parameters" : {
+                "brightness" : {
+                  "double" : 0.3
+                }
+              },
+              "type" : "brightness"
+            }
+          ],
+          "frame" : {
+            "height" : 1080,
+            "width" : 1920,
+            "x" : 0,
+            "y" : 0
+          },
+          "id" : "clip-002",
+          "mediaItem" : {
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 3
+            },
+            "id" : "media-002",
+            "type" : "video",
+            "url" : "/path/to/video2.mp4"
+          },
+          "opacity" : 1,
+          "timeRange" : {
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 3
+            },
+            "start" : {
+              "preferredTimescale" : 30,
+              "seconds" : 5
+            }
+          }
+        }
+      ],
+      "id" : "track-001",
+      "isEnabled" : true,
+      "trackType" : "video"
+    },
+    {
+      "clips" : [
+        {
+          "contentMode" : "aspectFit",
+          "effects" : [],
+          "frame" : {
+            "height" : 0,
+            "width" : 0,
+            "x" : 0,
+            "y" : 0
+          },
+          "id" : "clip-003",
+          "mediaItem" : {
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 8
+            },
+            "id" : "media-003",
+            "type" : "audio",
+            "url" : "/path/to/background-music.mp3"
+          },
+          "opacity" : 1,
+          "timeRange" : {
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 8
+            },
+            "start" : {
+              "preferredTimescale" : 30,
+              "seconds" : 0
+            }
+          }
+        }
+      ],
+      "id" : "track-002",
+      "isEnabled" : true,
+      "trackType" : "audio",
+      "volume" : 0.7
+    },
+    {
+      "clips" : [
+        {
+          "contentMode" : "aspectFit",
+          "effects" : [],
+          "frame" : {
+            "height" : 200,
+            "width" : 1720,
+            "x" : 100,
+            "y" : 800
+          },
+          "id" : "clip-004",
+          "mediaItem" : {
+            "alignment" : "center",
+            "behavior" : "wrap",
+            "color" : {
+              "alpha" : 1,
+              "blue" : 1,
+              "green" : 1,
+              "red" : 1
+            },
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 4
+            },
+            "font" : {
+              "name" : ".SFUI-Regular",
+              "size" : 72
+            },
+            "id" : "media-004",
+            "shadow" : {
+              "blur" : 5,
+              "color" : {
+                "alpha" : 0.5,
+                "blue" : 0,
+                "green" : 0,
+                "red" : 0
+              },
+              "offset" : {
+                "height" : 3,
+                "width" : 3
+              }
+            },
+            "strokes" : [
+              {
+                "color" : {
+                  "alpha" : 1,
+                  "blue" : 0,
+                  "green" : 0,
+                  "red" : 0
+                },
+                "width" : 2
+              }
+            ],
+            "text" : "Welcome to VideoGenerator",
+            "type" : "text"
+          },
+          "opacity" : 0.9,
+          "timeRange" : {
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 4
+            },
+            "start" : {
+              "preferredTimescale" : 30,
+              "seconds" : 1
+            }
+          }
+        },
+        {
+          "contentMode" : "aspectFit",
+          "effects" : [
+            {
+              "id" : "effect-002",
+              "parameters" : {
+                "angle" : {
+                  "double" : 45
+                }
+              },
+              "type" : "rotation"
+            }
+          ],
+          "frame" : {
+            "height" : 300,
+            "width" : 300,
+            "x" : 810,
+            "y" : 390
+          },
+          "id" : "clip-005",
+          "mediaItem" : {
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 3
+            },
+            "fillColor" : {
+              "alpha" : 0.7,
+              "blue" : 0.2,
+              "green" : 0.8,
+              "red" : 1
+            },
+            "id" : "media-005",
+            "shapeType" : {
+              "star" : {
+                "innerRadius" : 0.5,
+                "points" : 5
+              }
+            },
+            "strokeColor" : {
+              "alpha" : 1,
+              "blue" : 0.1,
+              "green" : 0.4,
+              "red" : 0.8
+            },
+            "strokeWidth" : 4,
+            "type" : "shape"
+          },
+          "opacity" : 1,
+          "timeRange" : {
+            "duration" : {
+              "preferredTimescale" : 30,
+              "seconds" : 3
+            },
+            "start" : {
+              "preferredTimescale" : 30,
+              "seconds" : 5
+            }
+          }
+        }
+      ],
+      "id" : "track-003",
+      "isEnabled" : true,
+      "trackType" : "overlay"
+    }
+  ]
+}
