@@ -53,13 +53,14 @@ func createExampleVideo(to outputURL: URL) async throws {
     let titleClip = Clip(
         mediaItem: .text(
             "Video Generator Demo",
-            font: CTFont(.system, size: 80),
+            font: CTFont(.system, size: 180),
             color: CGColor(red: 1, green: 1, blue: 1, alpha: 1),
             strokes: [
                 TextStroke(color: .init(red: 1, green: 0, blue: 0, alpha: 1), width: 12),
                 TextStroke(color: .init(red: 1, green: 0.3, blue: 0.3, alpha: 1), width: 10),
                 TextStroke(color: .init(red: 0, green: 0, blue: 0, alpha: 1), width: 8)
-            ]
+            ],
+            behavior: .wrap
         ),
         timeRange: CMTimeRange(
             start: CMTime(seconds: 0, preferredTimescale: 30),
@@ -79,7 +80,8 @@ func createExampleVideo(to outputURL: URL) async throws {
         mediaItem: .text(
             "Creating amazing videos with Swift",
             font: CTFont(.system, size: 64),
-            color: CGColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1)
+            color: CGColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1),
+            behavior: .autoScale
         ),
         timeRange: CMTimeRange(
             start: CMTime(seconds: 0.5, preferredTimescale: 30),

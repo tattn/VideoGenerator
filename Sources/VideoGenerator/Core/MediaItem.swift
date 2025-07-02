@@ -97,6 +97,24 @@ public struct TextShadow: Sendable {
     }
 }
 
+// MARK: - Text Behavior
+
+public enum TextBehavior: Sendable {
+    case wrap           // Text wraps to multiple lines within frame
+    case truncate       // Text is truncated with ellipsis
+    case autoScale      // Text scales to fit within frame
+}
+
+// MARK: - Text Alignment
+
+public enum TextAlignment: Sendable {
+    case left
+    case center
+    case right
+    case justified
+    case natural
+}
+
 // MARK: - Text Media Item
 
 public struct TextMediaItem: MediaItem, Sendable {
@@ -112,8 +130,10 @@ public struct TextMediaItem: MediaItem, Sendable {
     public let mediaType: MediaType = .text
     public let strokes: [TextStroke]
     public let shadow: TextShadow?
+    public let behavior: TextBehavior
+    public let alignment: TextAlignment
     
-    public init(id: UUID = UUID(), text: String, font: CTFont, color: CGColor, duration: CMTime, strokes: [TextStroke] = [], shadow: TextShadow? = nil) {
+    public init(id: UUID = UUID(), text: String, font: CTFont, color: CGColor, duration: CMTime, strokes: [TextStroke] = [], shadow: TextShadow? = nil, behavior: TextBehavior = .truncate, alignment: TextAlignment = .center) {
         self.id = id
         self.text = text
         self.fontSize = CTFontGetSize(font)
@@ -130,6 +150,8 @@ public struct TextMediaItem: MediaItem, Sendable {
         self.duration = duration
         self.strokes = strokes
         self.shadow = shadow
+        self.behavior = behavior
+        self.alignment = alignment
     }
     
     public var font: CTFont {
@@ -162,6 +184,6 @@ public struct AudioMediaItem: MediaItem, Sendable {
 public enum MediaItemBuilder {
     case video(url: URL, duration: CMTime? = nil)
     case image(CGImage, duration: CMTime = CMTime(seconds: 3, preferredTimescale: 30))
-    case text(String, font: CTFont = CTFont(.system, size: 48), color: CGColor = CGColor(red: 1, green: 1, blue: 1, alpha: 1), strokes: [TextStroke] = [], shadow: TextShadow? = nil)
+    case text(String, font: CTFont = CTFont(.system, size: 48), color: CGColor = CGColor(red: 1, green: 1, blue: 1, alpha: 1), strokes: [TextStroke] = [], shadow: TextShadow? = nil, behavior: TextBehavior = .truncate, alignment: TextAlignment = .center)
     case audio(url: URL, duration: CMTime? = nil)
 }
