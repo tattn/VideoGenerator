@@ -22,6 +22,10 @@ public struct EffectParameters: Sendable {
     public subscript<T: Sendable>(key: String) -> T? {
         get { storage[key]?.value as? T }
     }
+    
+    var storageDict: [String: SendableValue] {
+        storage
+    }
 }
 
 // MARK: - SendableValue
