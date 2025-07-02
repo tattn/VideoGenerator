@@ -169,11 +169,20 @@ public actor VideoCompositor {
             paragraphStyle.alignment = .center
             paragraphStyle.lineBreakMode = .byTruncatingTail
             
-            let attributes: [NSAttributedString.Key: Any] = [
+            var attributes: [NSAttributedString.Key: Any] = [
                 .font: textItem.font,
                 .foregroundColor: UIColor(cgColor: textItem.color),
                 .paragraphStyle: paragraphStyle
             ]
+            
+            // Add shadow if present
+            if let shadow = textItem.shadow {
+                let shadowObj = NSShadow()
+                shadowObj.shadowColor = UIColor(cgColor: shadow.color)
+                shadowObj.shadowOffset = shadow.offset
+                shadowObj.shadowBlurRadius = shadow.blur
+                attributes[.shadow] = shadowObj
+            }
             
             let attributedString = NSAttributedString(string: textItem.text, attributes: attributes)
             
@@ -223,7 +232,22 @@ public actor VideoCompositor {
                 drawRect = CGRect(x: xOffset, y: yOffset, width: scaledWidth, height: scaledHeight)
             }
             
-            // Draw text in calculated rectangle
+            // Draw strokes from outer to inner (reverse order)
+            if !textItem.strokes.isEmpty {
+                // Remove shadow for stroke drawing
+                var strokeAttributes = attributes
+                strokeAttributes.removeValue(forKey: .shadow)
+                
+                // Draw strokes in reverse order (largest to smallest)
+                for stroke in textItem.strokes.reversed() {
+                    strokeAttributes[.strokeColor] = UIColor(cgColor: stroke.color)
+                    strokeAttributes[.strokeWidth] = -stroke.width // Negative for outer stroke
+                    let strokeString = NSAttributedString(string: textItem.text, attributes: strokeAttributes)
+                    strokeString.draw(in: drawRect)
+                }
+            }
+            
+            // Draw text in calculated rectangle (with shadow if present)
             attributedString.draw(in: drawRect)
         }
         
@@ -254,11 +278,20 @@ public actor VideoCompositor {
         paragraphStyle.alignment = .center
         paragraphStyle.lineBreakMode = .byTruncatingTail
         
-        let attributes: [NSAttributedString.Key: Any] = [
+        var attributes: [NSAttributedString.Key: Any] = [
             .font: textItem.font as NSFont,
             .foregroundColor: NSColor(cgColor: textItem.color) ?? NSColor.white,
             .paragraphStyle: paragraphStyle
         ]
+        
+        // Add shadow if present
+        if let shadow = textItem.shadow {
+            let shadowObj = NSShadow()
+            shadowObj.shadowColor = NSColor(cgColor: shadow.color) ?? NSColor.black
+            shadowObj.shadowOffset = shadow.offset
+            shadowObj.shadowBlurRadius = shadow.blur
+            attributes[.shadow] = shadowObj
+        }
         
         let attributedString = NSAttributedString(string: textItem.text, attributes: attributes)
         
@@ -307,7 +340,22 @@ public actor VideoCompositor {
             drawRect = CGRect(x: xOffset, y: yOffset, width: scaledWidth, height: scaledHeight)
         }
         
-        // Draw text in calculated rectangle
+        // Draw strokes from outer to inner (reverse order)
+        if !textItem.strokes.isEmpty {
+            // Remove shadow for stroke drawing
+            var strokeAttributes = attributes
+            strokeAttributes.removeValue(forKey: .shadow)
+            
+            // Draw strokes in reverse order (largest to smallest)
+            for stroke in textItem.strokes.reversed() {
+                strokeAttributes[.strokeColor] = NSColor(cgColor: stroke.color) ?? NSColor.black
+                strokeAttributes[.strokeWidth] = -stroke.width // Negative for outer stroke
+                let strokeString = NSAttributedString(string: textItem.text, attributes: strokeAttributes)
+                strokeString.draw(in: drawRect)
+            }
+        }
+        
+        // Draw text in calculated rectangle (with shadow if present)
         attributedString.draw(in: drawRect)
         
         NSGraphicsContext.restoreGraphicsState()

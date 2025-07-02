@@ -1,8 +1,12 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 struct ContentView: View {
     @State private var isExporting = false
     @State private var exportMessage = ""
+    @State private var exportedFileURL: URL?
     
     var body: some View {
         VStack(spacing: 20) {
@@ -39,11 +43,36 @@ struct ContentView: View {
             }
             
             if !exportMessage.isEmpty {
-                Text(exportMessage)
-                    .font(.caption)
-                    .foregroundColor(exportMessage.contains("Error") ? .red : .green)
-                    .multilineTextAlignment(.center)
-                    .padding(.top)
+                VStack(spacing: 5) {
+                    Text(exportMessage)
+                        .font(.caption)
+                        .foregroundColor(exportMessage.contains("Error") ? .red : .green)
+                        .multilineTextAlignment(.center)
+                    
+                    #if os(macOS)
+                    if let fileURL = exportedFileURL {
+                        Button(action: {
+                            NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: fileURL.deletingLastPathComponent().path)
+                        }) {
+                            HStack {
+                                Image(systemName: "folder.open")
+                                Text(fileURL.lastPathComponent)
+                                    .underline()
+                            }
+                            .foregroundColor(.blue)
+                        }
+                        .buttonStyle(.plain)
+                        .onHover { inside in
+                            if inside {
+                                NSCursor.pointingHand.push()
+                            } else {
+                                NSCursor.pop()
+                            }
+                        }
+                    }
+                    #endif
+                }
+                .padding(.top)
             }
         }
         .padding()
@@ -62,12 +91,14 @@ struct ContentView: View {
                 
                 await MainActor.run {
                     isExporting = false
-                    exportMessage = "Video exported successfully!\nLocation: \(outputURL.lastPathComponent)"
+                    exportMessage = "Video exported successfully!"
+                    exportedFileURL = outputURL
                 }
             } catch {
                 await MainActor.run {
                     isExporting = false
                     exportMessage = "Error: \(error.localizedDescription)"
+                    exportedFileURL = nil
                 }
                 print("Export error: \(error)")
             }

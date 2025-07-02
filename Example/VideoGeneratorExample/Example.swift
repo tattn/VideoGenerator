@@ -54,7 +54,12 @@ func createExampleVideo(to outputURL: URL) async throws {
         mediaItem: .text(
             "Video Generator Demo",
             font: CTFont(.system, size: 80),
-            color: CGColor(red: 1, green: 1, blue: 1, alpha: 1)
+            color: CGColor(red: 1, green: 1, blue: 1, alpha: 1),
+            strokes: [
+                TextStroke(color: .init(red: 1, green: 0, blue: 0, alpha: 1), width: 12),
+                TextStroke(color: .init(red: 1, green: 0.3, blue: 0.3, alpha: 1), width: 10),
+                TextStroke(color: .init(red: 0, green: 0, blue: 0, alpha: 1), width: 8)
+            ]
         ),
         timeRange: CMTimeRange(
             start: CMTime(seconds: 0, preferredTimescale: 30),

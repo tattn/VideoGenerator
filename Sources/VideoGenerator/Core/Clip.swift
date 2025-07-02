@@ -63,8 +63,8 @@ extension Clip {
             let imageItem = ImageMediaItem(id: UUID(), image: image, duration: duration)
             self.init(mediaItem: imageItem, timeRange: timeRange, frame: frame, contentMode: contentMode, transform: transform, effects: effects, opacity: opacity)
             
-        case .text(let text, let font, let color):
-            let textItem = TextMediaItem(id: UUID(), text: text, font: font, color: color, duration: timeRange.duration)
+        case .text(let text, let font, let color, let strokes, let shadow):
+            let textItem = TextMediaItem(id: UUID(), text: text, font: font, color: color, duration: timeRange.duration, strokes: strokes, shadow: shadow)
             self.init(mediaItem: textItem, timeRange: timeRange, frame: frame, contentMode: contentMode, transform: transform, effects: effects, opacity: opacity)
             
         case .audio(let url, let duration):

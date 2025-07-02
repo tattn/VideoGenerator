@@ -71,6 +71,32 @@ public struct ImageMediaItem: MediaItem, Sendable {
     }
 }
 
+// MARK: - Text Stroke
+
+public struct TextStroke: Sendable {
+    public let color: CGColor
+    public let width: CGFloat
+    
+    public init(color: CGColor, width: CGFloat) {
+        self.color = color
+        self.width = width
+    }
+}
+
+// MARK: - Text Shadow
+
+public struct TextShadow: Sendable {
+    public let color: CGColor
+    public let offset: CGSize
+    public let blur: CGFloat
+    
+    public init(color: CGColor, offset: CGSize, blur: CGFloat) {
+        self.color = color
+        self.offset = offset
+        self.blur = blur
+    }
+}
+
 // MARK: - Text Media Item
 
 public struct TextMediaItem: MediaItem, Sendable {
@@ -84,8 +110,10 @@ public struct TextMediaItem: MediaItem, Sendable {
     private let colorAlpha: CGFloat
     public let duration: CMTime
     public let mediaType: MediaType = .text
+    public let strokes: [TextStroke]
+    public let shadow: TextShadow?
     
-    public init(id: UUID = UUID(), text: String, font: CTFont, color: CGColor, duration: CMTime) {
+    public init(id: UUID = UUID(), text: String, font: CTFont, color: CGColor, duration: CMTime, strokes: [TextStroke] = [], shadow: TextShadow? = nil) {
         self.id = id
         self.text = text
         self.fontSize = CTFontGetSize(font)
@@ -100,6 +128,8 @@ public struct TextMediaItem: MediaItem, Sendable {
         self.colorAlpha = components.count > 3 ? components[3] : 1
         
         self.duration = duration
+        self.strokes = strokes
+        self.shadow = shadow
     }
     
     public var font: CTFont {
@@ -132,6 +162,6 @@ public struct AudioMediaItem: MediaItem, Sendable {
 public enum MediaItemBuilder {
     case video(url: URL, duration: CMTime? = nil)
     case image(CGImage, duration: CMTime = CMTime(seconds: 3, preferredTimescale: 30))
-    case text(String, font: CTFont = CTFont(.system, size: 48), color: CGColor = CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+    case text(String, font: CTFont = CTFont(.system, size: 48), color: CGColor = CGColor(red: 1, green: 1, blue: 1, alpha: 1), strokes: [TextStroke] = [], shadow: TextShadow? = nil)
     case audio(url: URL, duration: CMTime? = nil)
 }

@@ -103,6 +103,57 @@ let clip = Clip(
 )
 ```
 
+### Text with Stroke and Shadow
+
+Create stunning text effects with multiple strokes and shadows:
+
+```swift
+// Simple text with stroke
+let strokedText = Clip(
+    mediaItem: .text(
+        "Outlined Text",
+        font: CTFont(.system, size: 80),
+        color: CGColor(red: 1, green: 1, blue: 1, alpha: 1),
+        strokes: [
+            TextStroke(color: CGColor(red: 0, green: 0, blue: 0, alpha: 1), width: 4)
+        ]
+    ),
+    timeRange: timeRange,
+    frame: CGRect(x: 100, y: 100, width: 800, height: 200)
+)
+
+// Text with multiple strokes (layered effect)
+let multiStrokeText = Clip(
+    mediaItem: .text(
+        "Layered",
+        font: CTFont(.systemBold, size: 100),
+        color: CGColor(red: 1, green: 1, blue: 1, alpha: 1),
+        strokes: [
+            TextStroke(color: CGColor(red: 1, green: 0, blue: 0, alpha: 1), width: 10),  // Red outer
+            TextStroke(color: CGColor(red: 0, green: 0, blue: 0, alpha: 1), width: 5)    // Black inner
+        ]
+    ),
+    timeRange: timeRange,
+    frame: CGRect(x: 100, y: 300, width: 800, height: 200)
+)
+
+// Text with shadow
+let shadowText = Clip(
+    mediaItem: .text(
+        "Shadow",
+        font: CTFont(.system, size: 90),
+        color: CGColor(red: 1, green: 1, blue: 0, alpha: 1),
+        shadow: TextShadow(
+            color: CGColor(red: 0, green: 0, blue: 0, alpha: 0.8),
+            offset: CGSize(width: 5, height: 5),
+            blur: 10
+        )
+    ),
+    timeRange: timeRange,
+    frame: CGRect(x: 100, y: 500, width: 800, height: 200)
+)
+```
+
 ### Frame-based Layout
 
 Unlike traditional video editing software, VideoGenerator uses iOS-style frame layouts with top-left origin:
@@ -115,10 +166,8 @@ let clip = Clip(
     frame: CGRect(x: 100, y: 200, width: 640, height: 480)
 )
 
-// Use layout helpers
-clip.setPosition(CGPoint(x: 50, y: 50))
-clip.setSize(CGSize(width: 800, height: 600))
-clip.center(in: timeline.size)
+// Content mode for aspect ratio
+clip.contentMode = .aspectFit  // or .aspectFill, .scaleToFill
 ```
 
 ## Architecture
