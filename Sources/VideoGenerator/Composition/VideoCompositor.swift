@@ -54,17 +54,9 @@ public actor VideoCompositor {
         var compositeImage = baseImage
         
         let tracks = await timeline.tracks
-        let sortedTracks = tracks.sorted { track1, track2 in
-            switch (track1.trackType, track2.trackType) {
-            case (.video, _): return true
-            case (_, .video): return false
-            case (.overlay, .effect): return true
-            case (.effect, .overlay): return false
-            default: return true
-            }
-        }
         
-        for track in sortedTracks where track.isEnabled {
+        // Render tracks in order they were added (first track = bottom layer, last track = top layer)
+        for track in tracks where track.isEnabled {
             guard track.trackType == .video || track.trackType == .overlay else { continue }
             
             let clips = track.clips(at: time)
