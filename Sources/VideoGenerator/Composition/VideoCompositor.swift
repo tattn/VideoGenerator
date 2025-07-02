@@ -90,6 +90,9 @@ public actor VideoCompositor {
             // For text, render at timeline size and position will be handled in renderTextForClip
             let canvasSize = renderContext.size
             image = try await renderTextForClip(mediaItem as! TextMediaItem, clip: clip, canvasSize: canvasSize)
+        } else if mediaItem.mediaType == .shape {
+            // Shapes are rendered through renderContext
+            image = try await renderContext.image(for: mediaItem)
         } else {
             image = try await renderContext.image(for: mediaItem)
         }

@@ -65,6 +65,10 @@ extension Clip {
         case .audio(let url, let duration):
             let audioItem = AudioMediaItem(id: UUID(), url: url, duration: duration ?? CMTime(seconds: 5, preferredTimescale: 30))
             self.init(mediaItem: audioItem, timeRange: timeRange, frame: frame, contentMode: contentMode, effects: effects, opacity: opacity)
+            
+        case .shape(let shapeType, let fillColor, let strokeColor, let strokeWidth, let duration):
+            let shapeItem = ShapeMediaItem(id: UUID(), shapeType: shapeType, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth, duration: duration)
+            self.init(mediaItem: shapeItem, timeRange: timeRange, frame: frame, contentMode: contentMode, effects: effects, opacity: opacity)
         }
     }
 }

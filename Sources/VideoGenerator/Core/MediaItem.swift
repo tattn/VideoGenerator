@@ -10,6 +10,7 @@ public enum MediaType: Sendable {
     case image
     case text
     case audio
+    case shape
 }
 
 // MARK: - MediaItem Protocol
@@ -179,6 +180,84 @@ public struct AudioMediaItem: MediaItem, Sendable {
     }
 }
 
+// MARK: - Path Elements
+
+public enum PathElement: Sendable {
+    case moveTo(x: CGFloat, y: CGFloat)
+    case lineTo(x: CGFloat, y: CGFloat)
+    case quadCurveTo(x1: CGFloat, y1: CGFloat, x: CGFloat, y: CGFloat)
+    case curveTo(x1: CGFloat, y1: CGFloat, x2: CGFloat, y2: CGFloat, x: CGFloat, y: CGFloat)
+    case arc(center: CGPoint, radius: CGFloat, startAngle: CGFloat, endAngle: CGFloat, clockwise: Bool)
+    case addRect(CGRect)
+    case addEllipse(in: CGRect)
+    case closeSubpath
+}
+
+// MARK: - Shape Types
+
+public enum ShapeType: Sendable {
+    case rectangle
+    case roundedRectangle(cornerRadius: CGFloat)
+    case circle
+    case ellipse
+    case triangle
+    case polygon(sides: Int)
+    case star(points: Int, innerRadius: CGFloat)
+    case path([PathElement])
+}
+
+// MARK: - Shape Media Item
+
+public struct ShapeMediaItem: MediaItem, Sendable {
+    public let id: UUID
+    public let shapeType: ShapeType
+    private let fillColorRed: CGFloat
+    private let fillColorGreen: CGFloat
+    private let fillColorBlue: CGFloat
+    private let fillColorAlpha: CGFloat
+    private let strokeColorRed: CGFloat
+    private let strokeColorGreen: CGFloat
+    private let strokeColorBlue: CGFloat
+    private let strokeColorAlpha: CGFloat
+    public let strokeWidth: CGFloat
+    public let duration: CMTime
+    public let mediaType: MediaType = .shape
+    
+    public init(
+        id: UUID = UUID(),
+        shapeType: ShapeType,
+        fillColor: CGColor,
+        strokeColor: CGColor = CGColor(red: 0, green: 0, blue: 0, alpha: 0),
+        strokeWidth: CGFloat = 0,
+        duration: CMTime
+    ) {
+        self.id = id
+        self.shapeType = shapeType
+        self.strokeWidth = strokeWidth
+        self.duration = duration
+        
+        let fillComponents = fillColor.components ?? [0, 0, 0, 1]
+        self.fillColorRed = fillComponents.count > 0 ? fillComponents[0] : 0
+        self.fillColorGreen = fillComponents.count > 1 ? fillComponents[1] : 0
+        self.fillColorBlue = fillComponents.count > 2 ? fillComponents[2] : 0
+        self.fillColorAlpha = fillComponents.count > 3 ? fillComponents[3] : 1
+        
+        let strokeComponents = strokeColor.components ?? [0, 0, 0, 0]
+        self.strokeColorRed = strokeComponents.count > 0 ? strokeComponents[0] : 0
+        self.strokeColorGreen = strokeComponents.count > 1 ? strokeComponents[1] : 0
+        self.strokeColorBlue = strokeComponents.count > 2 ? strokeComponents[2] : 0
+        self.strokeColorAlpha = strokeComponents.count > 3 ? strokeComponents[3] : 0
+    }
+    
+    public var fillColor: CGColor {
+        CGColor(red: fillColorRed, green: fillColorGreen, blue: fillColorBlue, alpha: fillColorAlpha)
+    }
+    
+    public var strokeColor: CGColor {
+        CGColor(red: strokeColorRed, green: strokeColorGreen, blue: strokeColorBlue, alpha: strokeColorAlpha)
+    }
+}
+
 // MARK: - MediaItemBuilder
 
 public enum MediaItemBuilder {
@@ -186,4 +265,57 @@ public enum MediaItemBuilder {
     case image(CGImage, duration: CMTime = CMTime(seconds: 3, preferredTimescale: 30))
     case text(String, font: CTFont = CTFont(.system, size: 48), color: CGColor = CGColor(red: 1, green: 1, blue: 1, alpha: 1), strokes: [TextStroke] = [], shadow: TextShadow? = nil, behavior: TextBehavior = .truncate, alignment: TextAlignment = .center)
     case audio(url: URL, duration: CMTime? = nil)
+    case shape(ShapeType, fillColor: CGColor = CGColor(red: 1, green: 1, blue: 1, alpha: 1), strokeColor: CGColor = CGColor(red: 0, green: 0, blue: 0, alpha: 0), strokeWidth: CGFloat = 0, duration: CMTime = CMTime(seconds: 3, preferredTimescale: 30))
+}
+
+// MARK: - Path Builder
+
+public struct PathBuilder {
+    private var elements: [PathElement] = []
+    
+    public init() {}
+    
+    public mutating func move(to point: CGPoint) -> PathBuilder {
+        elements.append(.moveTo(x: point.x, y: point.y))
+        return self
+    }
+    
+    public mutating func line(to point: CGPoint) -> PathBuilder {
+        elements.append(.lineTo(x: point.x, y: point.y))
+        return self
+    }
+    
+    public mutating func quadCurve(to point: CGPoint, control: CGPoint) -> PathBuilder {
+        elements.append(.quadCurveTo(x1: control.x, y1: control.y, x: point.x, y: point.y))
+        return self
+    }
+    
+    public mutating func curve(to point: CGPoint, control1: CGPoint, control2: CGPoint) -> PathBuilder {
+        elements.append(.curveTo(x1: control1.x, y1: control1.y, x2: control2.x, y2: control2.y, x: point.x, y: point.y))
+        return self
+    }
+    
+    public mutating func arc(center: CGPoint, radius: CGFloat, startAngle: CGFloat, endAngle: CGFloat, clockwise: Bool) -> PathBuilder {
+        elements.append(.arc(center: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: clockwise))
+        return self
+    }
+    
+    public mutating func addRect(_ rect: CGRect) -> PathBuilder {
+        elements.append(.addRect(rect))
+        return self
+    }
+    
+    public mutating func addEllipse(in rect: CGRect) -> PathBuilder {
+        elements.append(.addEllipse(in: rect))
+        return self
+    }
+    
+    public mutating func close() -> PathBuilder {
+        elements.append(.closeSubpath)
+        return self
+    }
+    
+    public func build() -> [PathElement] {
+        return elements
+    }
 }
