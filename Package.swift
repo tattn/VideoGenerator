@@ -13,6 +13,9 @@ let package = Package(
         .library(
             name: "VideoGenerator",
             targets: ["VideoGenerator"]),
+        .library(
+            name: "VideoGeneratorOpenAI",
+            targets: ["VideoGeneratorOpenAI"]),
     ],
     targets: [
         .target(
@@ -25,6 +28,18 @@ let package = Package(
         .testTarget(
             name: "VideoGeneratorTests",
             dependencies: ["VideoGenerator"],
+            swiftSettings: [
+                .swiftLanguageMode(.v6),
+                .enableExperimentalFeature("StrictConcurrency")
+            ]
+        ),
+        .target(
+            name: "VideoGeneratorOpenAI",
+            dependencies: ["VideoGenerator"],
+            exclude: ["README.md"],
+            resources: [
+                .process("Resources")
+            ],
             swiftSettings: [
                 .swiftLanguageMode(.v6),
                 .enableExperimentalFeature("StrictConcurrency")
