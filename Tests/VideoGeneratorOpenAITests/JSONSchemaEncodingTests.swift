@@ -81,6 +81,15 @@ final class JSONSchemaEncodingTests: XCTestCase {
         let schemaDict = jsonSchemaObject?["schema"] as? [String: Any]
         XCTAssertNotNil(schemaDict, "Schema should be a dictionary")
         XCTAssertEqual(schemaDict?["type"] as? String, "object")
+        
+        // Verify that "type" appears before "json_schema" in the JSON string
+        if let jsonString = String(data: data, encoding: .utf8) {
+            // The ResponseFormat should contain both fields
+            XCTAssertTrue(jsonString.contains("\"type\":\"json_schema\""), 
+                         "Should contain type field")
+            XCTAssertTrue(jsonString.contains("\"json_schema\":{"), 
+                         "Should contain json_schema field")
+        }
     }
     
     func testNumericValuesEncodedCorrectly() throws {

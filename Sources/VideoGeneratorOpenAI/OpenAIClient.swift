@@ -31,6 +31,13 @@ public actor OpenAIClient: Sendable {
             case messages
             case responseFormat = "response_format"
         }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(model, forKey: .model)
+            try container.encode(messages, forKey: .messages)
+            try container.encodeIfPresent(responseFormat, forKey: .responseFormat)
+        }
     }
     
     public struct Message: Codable, Sendable {
@@ -45,6 +52,13 @@ public actor OpenAIClient: Sendable {
         enum CodingKeys: String, CodingKey {
             case type
             case jsonSchema = "json_schema"
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            // Encode type first to ensure it appears first in the JSON
+            try container.encode(type, forKey: .type)
+            try container.encodeIfPresent(jsonSchema, forKey: .jsonSchema)
         }
     }
     
@@ -61,6 +75,7 @@ public actor OpenAIClient: Sendable {
         
         public func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
+            // Encode in the desired order: name, strict, schema
             try container.encode(name, forKey: .name)
             try container.encode(strict, forKey: .strict)
             
