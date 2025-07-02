@@ -157,19 +157,28 @@ public actor VideoExporter {
     ) async {
         let audioTracks = await timeline.audioTracks()
         
+        
         guard !audioTracks.isEmpty else {
             input.markAsFinished()
             return
         }
         
-        let sampleRate: Double = 44100
+        // Get sample rate from audio mixer which determines it from source files
+        let firstMix = try? await audioMixer.mix(
+            tracks: audioTracks,
+            at: CMTimeRange(start: .zero, duration: CMTime(seconds: 0.001, preferredTimescale: 1000))
+        )
+        
+        let sampleRate: Double = firstMix?.format.sampleRate ?? 48000
         let channelCount: AVAudioChannelCount = 2
         let format = AVAudioFormat(
             standardFormatWithSampleRate: sampleRate,
             channels: channelCount
         )!
         
-        let frameDuration = CMTime(value: 1024, timescale: CMTimeScale(sampleRate))
+        // Use larger frame size to avoid stuttering (4096 samples = ~0.093 seconds at 44.1kHz)
+        let samplesPerFrame: Int64 = 4096
+        let frameDuration = CMTime(value: samplesPerFrame, timescale: CMTimeScale(sampleRate))
         var currentTime = CMTime.zero
         
         while currentTime < duration {
@@ -180,9 +189,10 @@ public actor VideoExporter {
             guard writer.status == .writing else { break }
             
             let remainingTime = duration - currentTime
+            let actualFrameDuration = min(frameDuration, remainingTime)
             let timeRange = CMTimeRange(
                 start: currentTime,
-                duration: min(frameDuration, remainingTime)
+                duration: actualFrameDuration
             )
             
             do {
@@ -199,12 +209,13 @@ public actor VideoExporter {
                         input.append(silentBuffer)
                     }
                 }
+                
+                // Advance by the actual duration processed
+                currentTime = currentTime + actualFrameDuration
             } catch {
                 print("Error mixing audio at \(currentTime.seconds): \(error)")
                 break
             }
-            
-            currentTime = currentTime + frameDuration
         }
         
         input.markAsFinished()
@@ -257,6 +268,17 @@ extension AVAudioPCMBuffer {
         let audioFormat = self.format
         var asbd = audioFormat.streamDescription.pointee
         
+        // Ensure the audio format is correct for interleaved data
+        // The original format might be non-interleaved, so we need to set it explicitly
+        asbd.mFormatID = kAudioFormatLinearPCM
+        asbd.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | kAudioFormatFlagsNativeEndian
+        asbd.mSampleRate = audioFormat.sampleRate
+        asbd.mChannelsPerFrame = UInt32(audioFormat.channelCount)
+        asbd.mBitsPerChannel = 32
+        asbd.mBytesPerFrame = asbd.mChannelsPerFrame * (asbd.mBitsPerChannel / 8)
+        asbd.mFramesPerPacket = 1
+        asbd.mBytesPerPacket = asbd.mBytesPerFrame * asbd.mFramesPerPacket
+        
         var formatDescription: CMAudioFormatDescription?
         let status = CMAudioFormatDescriptionCreate(
             allocator: kCFAllocatorDefault,
@@ -300,39 +322,65 @@ extension AVAudioPCMBuffer {
         let audioFormat = self.format
         let frameCount = Int(self.frameLength)
         let channelCount = Int(audioFormat.channelCount)
-        let bytesPerFrame = Int(audioFormat.streamDescription.pointee.mBytesPerFrame)
+        
+        // Calculate the correct data size for interleaved format
+        let bytesPerSample = MemoryLayout<Float>.size
+        let bytesPerFrame = channelCount * bytesPerSample
         let dataSize = frameCount * bytesPerFrame
         
         var blockBuffer: CMBlockBuffer?
-        var data = Data(count: dataSize)
         
-        data.withUnsafeMutableBytes { bytes in
-            if let floatChannelData = self.floatChannelData {
-                let floatData = bytes.bindMemory(to: Float.self)
-                
-                for frame in 0..<frameCount {
-                    for channel in 0..<channelCount {
-                        let index = frame * channelCount + channel
-                        floatData[index] = floatChannelData[channel][frame]
+        // Allocate memory for the block buffer
+        let memoryBlock = UnsafeMutableRawPointer.allocate(byteCount: dataSize, alignment: MemoryLayout<Float>.alignment)
+        defer { memoryBlock.deallocate() }
+        
+        // Fill the memory block with audio data
+        if let floatChannelData = self.floatChannelData {
+            let floatData = memoryBlock.bindMemory(to: Float.self, capacity: frameCount * channelCount)
+            
+            
+            // AVAudioPCMBuffer uses non-interleaved format, but we need interleaved for CMSampleBuffer
+            for frame in 0..<frameCount {
+                for channel in 0..<channelCount {
+                    let destIndex = frame * channelCount + channel
+                    let sourceIndex = frame
+                    
+                    // Copy from non-interleaved to interleaved format
+                    if sourceIndex < Int(self.frameLength) {
+                        floatData[destIndex] = floatChannelData[channel][sourceIndex]
                     }
                 }
             }
+            
         }
         
-        let result = data.withUnsafeBytes { bytes in
-            CMBlockBufferCreateWithMemoryBlock(
-                allocator: kCFAllocatorDefault,
-                memoryBlock: UnsafeMutableRawPointer(mutating: bytes.baseAddress!),
-                blockLength: dataSize,
-                blockAllocator: kCFAllocatorNull,
-                customBlockSource: nil,
-                offsetToData: 0,
-                dataLength: dataSize,
-                flags: 0,
-                blockBufferOut: &blockBuffer
+        // Create block buffer and copy the data
+        let result = CMBlockBufferCreateWithMemoryBlock(
+            allocator: kCFAllocatorDefault,
+            memoryBlock: nil, // nil means CMBlockBuffer will allocate its own memory
+            blockLength: dataSize,
+            blockAllocator: kCFAllocatorDefault, // Use default allocator to manage memory
+            customBlockSource: nil,
+            offsetToData: 0,
+            dataLength: dataSize,
+            flags: kCMBlockBufferAssureMemoryNowFlag, // Allocate memory immediately
+            blockBufferOut: &blockBuffer
+        )
+        
+        if result == noErr, let blockBuffer = blockBuffer {
+            // Copy our data into the block buffer
+            let copyResult = CMBlockBufferReplaceDataBytes(
+                with: memoryBlock,
+                blockBuffer: blockBuffer,
+                offsetIntoDestination: 0,
+                dataLength: dataSize
             )
+            
+            if copyResult == noErr {
+                return blockBuffer
+            }
         }
         
-        return result == noErr ? blockBuffer : nil
+        return nil
     }
 }

@@ -21,9 +21,21 @@ func createExampleVideo(to outputURL: URL) async throws {
     )
 
     // Create tracks
+    var bgmTrack = Track(id: UUID(), trackType: .audio, clips: [], isEnabled: true, volume: 1.0)
     var videoTrack = Track(id: UUID(), trackType: .video, clips: [], isEnabled: true)
     var overlayTrack = Track(id: UUID(), trackType: .overlay, clips: [], isEnabled: true)
-    
+
+    // Add background music
+    if let bgmURL = Bundle.main.url(forResource: "bgm", withExtension: "m4a") {
+        let bgmItem = AudioMediaItem(url: bgmURL, duration: CMTime(seconds: 3, preferredTimescale: 30))
+        let bgmClip = Clip(
+            mediaItem: bgmItem,
+            timeRange: CMTimeRange(start: .zero, duration: CMTime(seconds: 3, preferredTimescale: 30)),
+            frame: CGRect(origin: .zero, size: timeline.size)
+        )
+        bgmTrack.clips.append(bgmClip)
+    }
+
     // Add a gradient background for TikTok-style aesthetic
     let gradientImage = createGradientImage(
         topColor: CGColor(red: 0.4, green: 0.2, blue: 0.6, alpha: 1.0),
@@ -31,8 +43,8 @@ func createExampleVideo(to outputURL: URL) async throws {
         size: timeline.size
     )
     let backgroundClip = Clip(
-        mediaItem: .image(gradientImage, duration: CMTime(seconds: 10, preferredTimescale: 30)),
-        timeRange: CMTimeRange(start: .zero, duration: CMTime(seconds: 10, preferredTimescale: 30)),
+        mediaItem: .image(gradientImage, duration: CMTime(seconds: 3, preferredTimescale: 30)),
+        timeRange: CMTimeRange(start: .zero, duration: CMTime(seconds: 3, preferredTimescale: 30)),
         frame: CGRect(origin: .zero, size: timeline.size)
     )
     videoTrack.clips.append(backgroundClip)
@@ -45,8 +57,8 @@ func createExampleVideo(to outputURL: URL) async throws {
             color: CGColor(red: 1, green: 1, blue: 1, alpha: 1)
         ),
         timeRange: CMTimeRange(
-            start: CMTime(seconds: 1, preferredTimescale: 30),
-            duration: CMTime(seconds: 4, preferredTimescale: 30)
+            start: CMTime(seconds: 0, preferredTimescale: 30),
+            duration: CMTime(seconds: 1, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 0, width: timeline.size.width, height: timeline.size.height),
         transform: .identity,
@@ -65,8 +77,8 @@ func createExampleVideo(to outputURL: URL) async throws {
             color: CGColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1)
         ),
         timeRange: CMTimeRange(
-            start: CMTime(seconds: 2, preferredTimescale: 30),
-            duration: CMTime(seconds: 3, preferredTimescale: 30)
+            start: CMTime(seconds: 0.5, preferredTimescale: 30),
+            duration: CMTime(seconds: 1.5, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 400, width: timeline.size.width, height: 100),
         transform: .identity,
@@ -82,8 +94,8 @@ func createExampleVideo(to outputURL: URL) async throws {
     let shapeClip1 = Clip(
         mediaItem: .image(shapeImage, duration: CMTime(seconds: 5, preferredTimescale: 30)),
         timeRange: CMTimeRange(
-            start: CMTime(seconds: 5, preferredTimescale: 30),
-            duration: CMTime(seconds: 5, preferredTimescale: 30)
+            start: CMTime(seconds: 1, preferredTimescale: 30),
+            duration: CMTime(seconds: 1, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 800, width: 200, height: 200),
         transform: .identity, // CGAffineTransform(rotationAngle: .pi / 4),
@@ -99,8 +111,8 @@ func createExampleVideo(to outputURL: URL) async throws {
     let shapeClip2 = Clip(
         mediaItem: .image(shapeImage2, duration: CMTime(seconds: 5, preferredTimescale: 30)),
         timeRange: CMTimeRange(
-            start: CMTime(seconds: 5, preferredTimescale: 30),
-            duration: CMTime(seconds: 5, preferredTimescale: 30)
+            start: CMTime(seconds: 2, preferredTimescale: 30),
+            duration: CMTime(seconds: 1, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 1200, width: 150, height: 150),
         transform: .identity, // CGAffineTransform(rotationAngle: -.pi / 6),
@@ -116,8 +128,8 @@ func createExampleVideo(to outputURL: URL) async throws {
             color: CGColor(red: 1, green: 1, blue: 1, alpha: 1)
         ),
         timeRange: CMTimeRange(
-            start: CMTime(seconds: 7, preferredTimescale: 30),
-            duration: CMTime(seconds: 3, preferredTimescale: 30)
+            start: CMTime(seconds: 2, preferredTimescale: 30),
+            duration: CMTime(seconds: 1, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 860, width: timeline.size.width, height: 200),
         transform: .identity,
@@ -126,6 +138,7 @@ func createExampleVideo(to outputURL: URL) async throws {
     overlayTrack.clips.append(endTextClip)
     
     // Add tracks to timeline
+    timeline.addTrack(bgmTrack)
     timeline.addTrack(videoTrack)
     timeline.addTrack(overlayTrack)
     timeline.updateDuration()
