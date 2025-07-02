@@ -324,15 +324,34 @@ private struct AnyEncodable: Encodable {
         } else if let string = value as? String {
             var container = encoder.singleValueContainer()
             try container.encode(string)
-        } else if let bool = value as? Bool {
-            var container = encoder.singleValueContainer()
-            try container.encode(bool)
+        } else if let number = value as? NSNumber {
+            // Handle NSNumber properly - check if it's actually a boolean
+            // NSNumber can represent booleans, but we need to be careful with 0 and 1
+            if CFBooleanGetTypeID() == CFGetTypeID(number) {
+                var container = encoder.singleValueContainer()
+                try container.encode(number.boolValue)
+            } else if String(cString: number.objCType) == "c" {
+                // This is actually a char/bool
+                var container = encoder.singleValueContainer()
+                try container.encode(number.boolValue)
+            } else if number.doubleValue.truncatingRemainder(dividingBy: 1) == 0 {
+                // It's a whole number, encode as integer
+                var container = encoder.singleValueContainer()
+                try container.encode(number.intValue)
+            } else {
+                // It's a decimal number
+                var container = encoder.singleValueContainer()
+                try container.encode(number.doubleValue)
+            }
         } else if let int = value as? Int {
             var container = encoder.singleValueContainer()
             try container.encode(int)
         } else if let double = value as? Double {
             var container = encoder.singleValueContainer()
             try container.encode(double)
+        } else if let bool = value as? Bool {
+            var container = encoder.singleValueContainer()
+            try container.encode(bool)
         } else if value is NSNull {
             var container = encoder.singleValueContainer()
             try container.encodeNil()

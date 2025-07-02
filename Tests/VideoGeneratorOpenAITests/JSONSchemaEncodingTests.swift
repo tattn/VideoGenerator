@@ -8,7 +8,7 @@ final class JSONSchemaEncodingTests: XCTestCase {
             "type": "object",
             "properties": [
                 "name": ["type": "string"],
-                "age": ["type": "integer"]
+                "age": ["type": "integer", "minimum": 0, "maximum": 120]
             ],
             "required": ["name", "age"]
         ]
@@ -42,6 +42,8 @@ final class JSONSchemaEncodingTests: XCTestCase {
         
         let ageProperty = properties?["age"] as? [String: Any]
         XCTAssertEqual(ageProperty?["type"] as? String, "integer")
+        XCTAssertEqual(ageProperty?["minimum"] as? Int, 0)
+        XCTAssertEqual(ageProperty?["maximum"] as? Int, 120)
         
         // Verify required array
         let required = schemaObject?["required"] as? [String]
@@ -79,5 +81,67 @@ final class JSONSchemaEncodingTests: XCTestCase {
         let schemaDict = jsonSchemaObject?["schema"] as? [String: Any]
         XCTAssertNotNil(schemaDict, "Schema should be a dictionary")
         XCTAssertEqual(schemaDict?["type"] as? String, "object")
+    }
+    
+    func testNumericValuesEncodedCorrectly() throws {
+        // Given a schema with numeric minimum/maximum values
+        let testSchema: [String: Any] = [
+            "type": "object",
+            "properties": [
+                "color": [
+                    "type": "object",
+                    "properties": [
+                        "red": ["type": "number", "minimum": 0, "maximum": 1],
+                        "green": ["type": "number", "minimum": 0, "maximum": 1],
+                        "blue": ["type": "number", "minimum": 0.0, "maximum": 1.0],
+                        "alpha": ["type": "number", "minimum": NSNumber(value: 0), "maximum": NSNumber(value: 1)]
+                    ]
+                ]
+            ]
+        ]
+        
+        let jsonSchema = try OpenAIClient.JSONSchema(
+            name: "color_test",
+            strict: true,
+            schema: testSchema
+        )
+        
+        // When
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        let data = try encoder.encode(jsonSchema)
+        
+        // Then
+        let jsonObject = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let schemaObject = jsonObject?["schema"] as? [String: Any]
+        let properties = schemaObject?["properties"] as? [String: Any]
+        let colorProperty = properties?["color"] as? [String: Any]
+        let colorProperties = colorProperty?["properties"] as? [String: Any]
+        
+        // Check red property (integers)
+        let redProperty = colorProperties?["red"] as? [String: Any]
+        XCTAssertEqual(redProperty?["minimum"] as? Int, 0)
+        XCTAssertEqual(redProperty?["maximum"] as? Int, 1)
+        XCTAssertNotNil(redProperty?["minimum"] as? Int, "minimum should be an integer, not a boolean")
+        
+        // Check green property (integers)
+        let greenProperty = colorProperties?["green"] as? [String: Any]
+        XCTAssertEqual(greenProperty?["minimum"] as? Int, 0)
+        XCTAssertEqual(greenProperty?["maximum"] as? Int, 1)
+        
+        // Check blue property (doubles)
+        let blueProperty = colorProperties?["blue"] as? [String: Any]
+        XCTAssertEqual(blueProperty?["minimum"] as? Double, 0.0)
+        XCTAssertEqual(blueProperty?["maximum"] as? Double, 1.0)
+        
+        // Check alpha property (NSNumber)
+        let alphaProperty = colorProperties?["alpha"] as? [String: Any]
+        if let minValue = alphaProperty?["minimum"] as? NSNumber {
+            XCTAssertEqual(minValue.intValue, 0)
+        } else if let minValue = alphaProperty?["minimum"] as? Int {
+            XCTAssertEqual(minValue, 0)
+        } else {
+            XCTFail("minimum should be a number, not a boolean")
+        }
     }
 }
