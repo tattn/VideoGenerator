@@ -69,10 +69,8 @@ private actor ImageCache {
             image = CIImage(cgImage: cgImage)
             
         case .text:
-            guard let textItem = mediaItem as? TextMediaItem else {
-                return CIImage.black
-            }
-            image = await renderText(textItem)
+            // Text rendering is handled in VideoCompositor.renderTextForClip
+            return CIImage.black
             
         case .video, .audio:
             return CIImage.black
@@ -80,62 +78,5 @@ private actor ImageCache {
         
         cache[mediaItem.id] = image
         return image
-    }
-    
-    private func renderText(_ textItem: TextMediaItem) async -> CIImage {
-        #if canImport(UIKit)
-        let size = defaultSize
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let image = renderer.image { context in
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.alignment = .center
-            
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: textItem.font,
-                .foregroundColor: UIColor(cgColor: textItem.color),
-                .paragraphStyle: paragraphStyle
-            ]
-            
-            let textSize = textItem.text.size(withAttributes: attributes)
-            let rect = CGRect(
-                x: (size.width - textSize.width) / 2,
-                y: (size.height - textSize.height) / 2,
-                width: textSize.width,
-                height: textSize.height
-            )
-            
-            textItem.text.draw(in: rect, withAttributes: attributes)
-        }
-        return CIImage(image: image) ?? CIImage.black
-        #else
-        let size = defaultSize
-        let image = NSImage(size: size)
-        image.lockFocus()
-        
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = .center
-        
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: textItem.font as NSFont,
-            .foregroundColor: NSColor(cgColor: textItem.color) ?? NSColor.white,
-            .paragraphStyle: paragraphStyle
-        ]
-        
-        let textSize = textItem.text.size(withAttributes: attributes)
-        let rect = CGRect(
-            x: (size.width - textSize.width) / 2,
-            y: (size.height - textSize.height) / 2,
-            width: textSize.width,
-            height: textSize.height
-        )
-        
-        textItem.text.draw(in: rect, withAttributes: attributes)
-        image.unlockFocus()
-        
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            return CIImage.black
-        }
-        return CIImage(cgImage: cgImage)
-        #endif
     }
 }

@@ -26,7 +26,6 @@ struct ClipTests {
         #expect(clip.timeRange == timeRange)
         #expect(clip.frame == frame)
         #expect(clip.opacity == 0.8)
-        #expect(clip.transform == .identity)
         #expect(clip.effects.isEmpty)
     }
     
@@ -78,14 +77,13 @@ struct ClipTests {
         #expect(textClip.mediaItem is TextMediaItem)
     }
     
-    @Test("Clip with transform and effects")
-    func testClipWithTransformAndEffects() {
+    @Test("Clip with effects")
+    func testClipWithEffects() {
         let mediaItem = VideoMediaItem(
             url: URL(fileURLWithPath: "/tmp/video.mp4"),
             duration: CMTime(seconds: 5, preferredTimescale: 30)
         )
         let timeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: 3, preferredTimescale: 30))
-        let transform = CGAffineTransform(rotationAngle: .pi / 4)
         let effects: [any Effect] = [
             BrightnessEffect(brightness: 0.2),
             GaussianBlurEffect(radius: 5)
@@ -94,11 +92,9 @@ struct ClipTests {
         let clip = Clip(
             mediaItem: mediaItem,
             timeRange: timeRange,
-            transform: transform,
             effects: effects
         )
         
-        #expect(clip.transform == transform)
         #expect(clip.effects.count == 2)
     }
 }

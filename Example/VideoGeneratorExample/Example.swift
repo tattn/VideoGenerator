@@ -67,7 +67,6 @@ func createExampleVideo(to outputURL: URL) async throws {
             duration: CMTime(seconds: 1, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 0, width: timeline.size.width, height: timeline.size.height),
-        transform: .identity,
         effects: [
             CameraShakeEffect.subtle
         ],
@@ -88,7 +87,6 @@ func createExampleVideo(to outputURL: URL) async throws {
             duration: CMTime(seconds: 1.5, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 400, width: timeline.size.width, height: 100),
-        transform: .identity,
         opacity: 0.8
     )
     overlayTrack.clips.append(subtitleClip)
@@ -105,7 +103,6 @@ func createExampleVideo(to outputURL: URL) async throws {
             duration: CMTime(seconds: 1, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 800, width: 200, height: 200),
-        transform: .identity, // CGAffineTransform(rotationAngle: .pi / 4),
         opacity: 0.7
     )
     overlayTrack.clips.append(shapeClip1)
@@ -122,7 +119,6 @@ func createExampleVideo(to outputURL: URL) async throws {
             duration: CMTime(seconds: 1, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 1200, width: 150, height: 150),
-        transform: .identity, // CGAffineTransform(rotationAngle: -.pi / 6),
         opacity: 0.7
     )
     overlayTrack.clips.append(shapeClip2)
@@ -139,7 +135,6 @@ func createExampleVideo(to outputURL: URL) async throws {
             duration: CMTime(seconds: 1, preferredTimescale: 30)
         ),
         frame: CGRect(x: 0, y: 860, width: timeline.size.width, height: 200),
-        transform: .identity,
         opacity: 1.0
     )
     overlayTrack.clips.append(endTextClip)

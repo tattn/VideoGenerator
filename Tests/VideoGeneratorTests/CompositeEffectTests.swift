@@ -1,27 +1,43 @@
 import Testing
 @testable import VideoGenerator
 import CoreMedia
-import CoreImage
+@preconcurrency import CoreImage
 
 @Suite("CompositeEffect Tests")
 struct CompositeEffectTests {
     
     // Mock effects for testing
+    final class MockEffectTracker: @unchecked Sendable {
+        var appliedEffects: [String] = []
+        
+        func recordApplication(of effectName: String) {
+            appliedEffects.append(effectName)
+        }
+    }
+    
     struct MockEffect: Effect {
         let id = UUID()
         var parameters: EffectParameters
         let name: String
-        var applyCalled = false
+        let tracker: MockEffectTracker
         
-        init(name: String, parameters: EffectParameters = EffectParameters()) {
+        init(name: String, tracker: MockEffectTracker, parameters: EffectParameters = EffectParameters()) {
             self.name = name
+            self.tracker = tracker
             self.parameters = parameters
         }
         
-        mutating func apply(to image: CIImage, at time: CMTime, renderContext: any RenderContext) async throws -> CIImage {
-            applyCalled = true
-            print("MockEffect \(name) applied")
+        func apply(to image: CIImage, at time: CMTime, renderContext: any RenderContext) async throws -> CIImage {
+            tracker.recordApplication(of: name)
             return image
+        }
+    }
+    
+    final class CountingEffectTracker: @unchecked Sendable {
+        var callOrder: [Int] = []
+        
+        func record(_ order: Int) {
+            callOrder.append(order)
         }
     }
     
@@ -29,26 +45,26 @@ struct CompositeEffectTests {
         let id = UUID()
         var parameters: EffectParameters = EffectParameters()
         let order: Int
-        static var callOrder: [Int] = []
+        let tracker: CountingEffectTracker
         
-        init(order: Int) {
+        init(order: Int, tracker: CountingEffectTracker) {
             self.order = order
+            self.tracker = tracker
         }
         
         func apply(to image: CIImage, at time: CMTime, renderContext: any RenderContext) async throws -> CIImage {
-            CountingEffect.callOrder.append(order)
+            tracker.record(order)
             return image
         }
     }
     
     @Test("Sequential composite effect applies effects in order")
     func testSequentialComposite() async throws {
-        // Reset call order
-        CountingEffect.callOrder = []
+        let tracker = CountingEffectTracker()
         
-        let effect1 = CountingEffect(order: 1)
-        let effect2 = CountingEffect(order: 2)
-        let effect3 = CountingEffect(order: 3)
+        let effect1 = CountingEffect(order: 1, tracker: tracker)
+        let effect2 = CountingEffect(order: 2, tracker: tracker)
+        let effect3 = CountingEffect(order: 3, tracker: tracker)
         
         let composite = CompositeEffect.sequential([effect1, effect2, effect3])
         
@@ -58,7 +74,7 @@ struct CompositeEffectTests {
         
         _ = try await composite.apply(to: image, at: .zero, renderContext: context)
         
-        #expect(CountingEffect.callOrder == [1, 2, 3])
+        #expect(tracker.callOrder == [1, 2, 3])
     }
     
     @Test("Empty composite effect returns original image")
@@ -76,9 +92,10 @@ struct CompositeEffectTests {
     @Test("Effect chain builder creates composite effect")
     @MainActor
     func testEffectChainBuilder() async throws {
-        let effect1 = MockEffect(name: "Effect1")
-        let effect2 = MockEffect(name: "Effect2")
-        let effect3 = MockEffect(name: "Effect3")
+        let tracker = MockEffectTracker()
+        let effect1 = MockEffect(name: "Effect1", tracker: tracker)
+        let effect2 = MockEffect(name: "Effect2", tracker: tracker)
+        let effect3 = MockEffect(name: "Effect3", tracker: tracker)
         
         let composite = EffectChain()
             .add(effect1)
@@ -91,8 +108,9 @@ struct CompositeEffectTests {
     
     @Test("Effect operators create composite effects")
     func testEffectOperators() {
-        let effect1 = MockEffect(name: "Effect1")
-        let effect2 = MockEffect(name: "Effect2")
+        let tracker = MockEffectTracker()
+        let effect1 = MockEffect(name: "Effect1", tracker: tracker)
+        let effect2 = MockEffect(name: "Effect2", tracker: tracker)
         
         let sequential = effect1.then(effect2)
         #expect(sequential.effects.count == 2)
@@ -103,7 +121,8 @@ struct CompositeEffectTests {
     
     @Test("Time range effect applies only within range")
     func testTimeRangeEffect() async throws {
-        var mockEffect = MockEffect(name: "TimedEffect")
+        let tracker = MockEffectTracker()
+        let mockEffect = MockEffect(name: "TimedEffect", tracker: tracker)
         let timeRange = CMTimeRange(
             start: CMTime(seconds: 1, preferredTimescale: 30),
             duration: CMTime(seconds: 2, preferredTimescale: 30)
@@ -128,8 +147,9 @@ struct CompositeEffectTests {
     
     @Test("Conditional effect applies based on condition")
     func testConditionalEffect() async throws {
-        let trueEffect = MockEffect(name: "TrueEffect")
-        let falseEffect = MockEffect(name: "FalseEffect")
+        let tracker = MockEffectTracker()
+        let trueEffect = MockEffect(name: "TrueEffect", tracker: tracker)
+        let falseEffect = MockEffect(name: "FalseEffect", tracker: tracker)
         
         let conditionalEffect = ConditionalEffect(
             condition: { time, _ in
@@ -151,7 +171,8 @@ struct CompositeEffectTests {
     
     @Test("Parameter modifier creates modified effect")
     func testParameterModifier() {
-        let baseEffect = MockEffect(name: "Base", parameters: EffectParameters(["key1": .float(1.0)]))
+        let tracker = MockEffectTracker()
+        let baseEffect = MockEffect(name: "Base", tracker: tracker, parameters: EffectParameters(["key1": .float(1.0)]))
         
         let modifiedEffect = baseEffect.parameter("key2", value: .float(2.0))
         
@@ -163,8 +184,9 @@ struct CompositeEffectTests {
     
     @Test("Parallel composite effect blends results")
     func testParallelComposite() async throws {
-        let effect1 = MockEffect(name: "Effect1")
-        let effect2 = MockEffect(name: "Effect2")
+        let tracker = MockEffectTracker()
+        let effect1 = MockEffect(name: "Effect1", tracker: tracker)
+        let effect2 = MockEffect(name: "Effect2", tracker: tracker)
         
         let composite = CompositeEffect.parallel([effect1, effect2], blend: BlendFunctions.average)
         
@@ -179,15 +201,20 @@ struct CompositeEffectTests {
     
     @Test("Custom blend mode applies custom logic")
     func testCustomBlendMode() async throws {
-        let effect1 = MockEffect(name: "Effect1")
-        let effect2 = MockEffect(name: "Effect2")
+        let tracker = MockEffectTracker()
+        let effect1 = MockEffect(name: "Effect1", tracker: tracker)
+        let effect2 = MockEffect(name: "Effect2", tracker: tracker)
         
-        var customProcessorCalled = false
+        final class ProcessorTracker: @unchecked Sendable {
+            var called = false
+            func markCalled() { called = true }
+        }
+        let processorTracker = ProcessorTracker()
         
         let composite = CompositeEffect(
             effects: [effect1, effect2],
             blendMode: .custom { image, effects, time, context in
-                customProcessorCalled = true
+                processorTracker.markCalled()
                 // Apply effects in reverse order
                 var result = image
                 for effect in effects.reversed() {
@@ -202,23 +229,32 @@ struct CompositeEffectTests {
         
         _ = try await composite.apply(to: image, at: .zero, renderContext: context)
         
-        #expect(customProcessorCalled)
+        #expect(processorTracker.called)
     }
 }
 
 // Mock render context for testing
-actor MockRenderContext: RenderContext {
+private actor MockRenderContext: RenderContext {
     nonisolated let size: CGSize
     nonisolated let frameRate: Int
-    let time: CMTime
+    private var _time: CMTime = .zero
     
-    init(size: CGSize, frameRate: Int, time: CMTime = .zero) {
+    init(size: CGSize, frameRate: Int) {
         self.size = size
         self.frameRate = frameRate
-        self.time = time
     }
     
-    func texture(for mediaItem: any MediaItem) async throws -> any Metal.MTLTexture {
-        fatalError("Not implemented for testing")
+    var time: CMTime {
+        _time
+    }
+    
+    func setTime(_ time: CMTime) {
+        self._time = time
+    }
+    
+    func image(for mediaItem: any MediaItem) async throws -> CIImage {
+        // Return a simple test image
+        return CIImage(color: CIColor(red: 0, green: 0, blue: 1, alpha: 1))
+            .cropped(to: CGRect(origin: .zero, size: size))
     }
 }

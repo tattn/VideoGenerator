@@ -126,19 +126,32 @@ struct EffectTests {
         let resultImage = try await customEffect.apply(
             to: testImage,
             at: .zero,
-            renderContext: MockRenderContext()
+            renderContext: TestRenderContext()
         )
         
         #expect(resultImage.extent == testImage.extent)
     }
 }
 
-// MARK: - Mock Render Context
+// MARK: - Test Render Context
 
-actor MockRenderContext: RenderContext {
-    nonisolated let size: CGSize = CGSize(width: 1920, height: 1080)
-    nonisolated let frameRate: Int = 30
-    var time: CMTime { .zero }
+private actor TestRenderContext: RenderContext {
+    nonisolated let size: CGSize
+    nonisolated let frameRate: Int
+    private var _time: CMTime = .zero
+    
+    init(size: CGSize = CGSize(width: 1920, height: 1080), frameRate: Int = 30) {
+        self.size = size
+        self.frameRate = frameRate
+    }
+    
+    var time: CMTime {
+        _time
+    }
+    
+    func setTime(_ time: CMTime) {
+        self._time = time
+    }
     
     func image(for mediaItem: any MediaItem) async throws -> CIImage {
         CIImage(color: CIColor.black).cropped(to: CGRect(origin: .zero, size: size))
