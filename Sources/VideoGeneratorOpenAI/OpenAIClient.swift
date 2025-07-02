@@ -21,7 +21,7 @@ public actor OpenAIClient: Sendable {
         }
     }
     
-    public struct ChatCompletionRequest: Codable, Sendable {
+    public struct ChatCompletionRequest: Encodable, Sendable {
         let model: String
         let messages: [Message]
         let responseFormat: ResponseFormat?
@@ -38,7 +38,7 @@ public actor OpenAIClient: Sendable {
         let content: String
     }
     
-    public struct ResponseFormat: Codable, Sendable {
+    public struct ResponseFormat: Encodable, Sendable {
         let type: String
         let jsonSchema: JSONSchema?
         
@@ -48,10 +48,10 @@ public actor OpenAIClient: Sendable {
         }
     }
     
-    public struct JSONSchema: Codable, Sendable {
+    public struct JSONSchema: Encodable, Sendable {
         let name: String
         let strict: Bool
-        let schemaData: Data
+        private let schemaData: Data
         
         enum CodingKeys: String, CodingKey {
             case name
@@ -63,14 +63,10 @@ public actor OpenAIClient: Sendable {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(name, forKey: .name)
             try container.encode(strict, forKey: .strict)
-            try container.encode(schemaData, forKey: .schema)
-        }
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            name = try container.decode(String.self, forKey: .name)
-            strict = try container.decode(Bool.self, forKey: .strict)
-            schemaData = try container.decode(Data.self, forKey: .schema)
+            
+            // Decode the JSON data and encode it directly without base64 encoding
+            let jsonObject = try JSONSerialization.jsonObject(with: schemaData)
+            try container.encode(AnyEncodable(jsonObject), forKey: .schema)
         }
         
         public init(name: String, strict: Bool, schema: [String: Any]) throws {
@@ -303,5 +299,96 @@ public actor OpenAIClient: Sendable {
         }
         
         return imageData
+    }
+}
+
+// Helper structs for encoding/decoding [String: Any]
+private struct AnyEncodable: Encodable {
+    let value: Any
+    
+    init(_ value: Any) {
+        self.value = value
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        if let array = value as? [Any] {
+            var container = encoder.unkeyedContainer()
+            for item in array {
+                try container.encode(AnyEncodable(item))
+            }
+        } else if let dictionary = value as? [String: Any] {
+            var container = encoder.container(keyedBy: DynamicCodingKey.self)
+            for (key, value) in dictionary {
+                try container.encode(AnyEncodable(value), forKey: DynamicCodingKey(stringValue: key))
+            }
+        } else if let string = value as? String {
+            var container = encoder.singleValueContainer()
+            try container.encode(string)
+        } else if let bool = value as? Bool {
+            var container = encoder.singleValueContainer()
+            try container.encode(bool)
+        } else if let int = value as? Int {
+            var container = encoder.singleValueContainer()
+            try container.encode(int)
+        } else if let double = value as? Double {
+            var container = encoder.singleValueContainer()
+            try container.encode(double)
+        } else if value is NSNull {
+            var container = encoder.singleValueContainer()
+            try container.encodeNil()
+        } else {
+            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: encoder.codingPath, debugDescription: "Cannot encode value of type \(type(of: value))"))
+        }
+    }
+}
+
+private struct AnyDecodable: Decodable {
+    let value: Any
+    
+    init(from decoder: Decoder) throws {
+        if let container = try? decoder.container(keyedBy: DynamicCodingKey.self) {
+            var result = [String: Any]()
+            for key in container.allKeys {
+                result[key.stringValue] = try container.decode(AnyDecodable.self, forKey: key).value
+            }
+            value = result
+        } else if var container = try? decoder.unkeyedContainer() {
+            var result = [Any]()
+            while !container.isAtEnd {
+                result.append(try container.decode(AnyDecodable.self).value)
+            }
+            value = result
+        } else if let container = try? decoder.singleValueContainer() {
+            if container.decodeNil() {
+                value = NSNull()
+            } else if let string = try? container.decode(String.self) {
+                value = string
+            } else if let bool = try? container.decode(Bool.self) {
+                value = bool
+            } else if let int = try? container.decode(Int.self) {
+                value = int
+            } else if let double = try? container.decode(Double.self) {
+                value = double
+            } else {
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode value")
+            }
+        } else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Cannot decode value"))
+        }
+    }
+}
+
+private struct DynamicCodingKey: CodingKey {
+    let stringValue: String
+    let intValue: Int?
+    
+    init(stringValue: String) {
+        self.stringValue = stringValue
+        self.intValue = nil
+    }
+    
+    init?(intValue: Int) {
+        self.stringValue = String(intValue)
+        self.intValue = intValue
     }
 }
