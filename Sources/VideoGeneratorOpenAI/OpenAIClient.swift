@@ -551,6 +551,12 @@ public actor OpenAIClient: Sendable {
             }
         }
         
+        // OpenAI requires all properties to be in the required array
+        if let properties = cleaned["properties"] as? [String: Any] {
+            let allPropertyKeys = Array(properties.keys)
+            cleaned["required"] = allPropertyKeys
+        }
+        
         return cleaned
     }
     
