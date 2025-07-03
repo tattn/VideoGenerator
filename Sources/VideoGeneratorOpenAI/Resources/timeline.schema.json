@@ -326,8 +326,14 @@
         "shapeType": {
           "type": [
             "string",
-            "object",
             "null"
+          ],
+          "enum": [
+            "rectangle",
+            "circle",
+            "ellipse",
+            "triangle",
+            null
           ],
           "description": "Type of shape"
         },
