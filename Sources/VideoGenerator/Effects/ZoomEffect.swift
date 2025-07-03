@@ -170,16 +170,34 @@ public struct KenBurnsEffect: Effect, Sendable {
         // Apply transform
         let transformedImage = image.transformed(by: transform)
         
-        // Create a clamp filter to ensure the image fills the original extent
-        let clampFilter = CIFilter(name: "CIAffineClamp")!
-        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
-        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
-        
-        // Crop to original bounds
-        let clampedImage = clampFilter.outputImage!
-        let croppedImage = clampedImage.cropped(to: imageExtent)
-        
-        return croppedImage
+        // If scale is less than 1 (zoomed out), we need to composite over a clear background
+        if scale < 1.0 {
+            // Create clear background
+            let backgroundColor = CIImage(color: CIColor.clear).cropped(to: imageExtent)
+            
+            // Create a clamp filter first to prevent edge stretching
+            let clampFilter = CIFilter(name: "CIAffineClamp")!
+            clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
+            clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+            let clampedImage = clampFilter.outputImage!
+            
+            // Composite the clamped image over the clear background
+            let compositeFilter = CIFilter(name: "CISourceOverCompositing")!
+            compositeFilter.setValue(clampedImage, forKey: kCIInputImageKey)
+            compositeFilter.setValue(backgroundColor, forKey: kCIInputBackgroundImageKey)
+            
+            // Crop to original bounds
+            return compositeFilter.outputImage!.cropped(to: imageExtent)
+        } else {
+            // For zoom in (scale >= 1), use the original approach
+            let clampFilter = CIFilter(name: "CIAffineClamp")!
+            clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
+            clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+            
+            // Crop to original bounds
+            let clampedImage = clampFilter.outputImage!
+            return clampedImage.cropped(to: imageExtent)
+        }
     }
 }
 
