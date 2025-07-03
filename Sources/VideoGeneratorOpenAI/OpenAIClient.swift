@@ -523,6 +523,7 @@ public actor OpenAIClient: Sendable {
     nonisolated private func cleanSchemaForOpenAI(_ schema: [String: Any]) -> [String: Any] {
         var cleaned = [String: Any]()
         
+        // First pass: copy all values except the ones we need to skip or transform
         for (key, value) in schema {
             // Skip OpenAI-unsupported fields but keep $ref
             if key == "$schema" || key == "$id" || key == "format" {
@@ -532,6 +533,11 @@ public actor OpenAIClient: Sendable {
             // Special handling for definitions - OpenAI doesn't support this section
             // but we should keep the structure of the main schema intact
             if key == "definitions" {
+                continue
+            }
+            
+            // Don't process required array in the first pass
+            if key == "required" {
                 continue
             }
             
@@ -551,21 +557,26 @@ public actor OpenAIClient: Sendable {
             }
         }
         
+        // Second pass: handle required array after all properties have been processed
         // OpenAI requires all properties to be in the required array
         // and the required array should only contain keys that exist in properties
         if let properties = cleaned["properties"] as? [String: Any] {
             let allPropertyKeys = Set(properties.keys)
             
-            // If there's an existing required array, filter it to only include valid keys
-            if let existingRequired = cleaned["required"] as? [String] {
+            // If there's an existing required array in the original schema, 
+            // filter it to only include valid keys
+            if let existingRequired = schema["required"] as? [String] {
                 let validRequired = existingRequired.filter { allPropertyKeys.contains($0) }
                 // Add any missing property keys
                 let missingKeys = allPropertyKeys.subtracting(validRequired)
-                cleaned["required"] = validRequired + Array(missingKeys)
+                cleaned["required"] = validRequired + Array(missingKeys).sorted()
             } else {
                 // If no required array exists, add all property keys
-                cleaned["required"] = Array(allPropertyKeys)
+                cleaned["required"] = Array(allPropertyKeys).sorted()
             }
+        } else if let existingRequired = schema["required"] as? [String] {
+            // If there are no properties but there is a required array, keep it
+            cleaned["required"] = existingRequired
         }
         
         return cleaned
