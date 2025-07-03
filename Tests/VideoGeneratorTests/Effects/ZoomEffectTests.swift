@@ -122,7 +122,9 @@ struct ZoomEffectTests {
             renderContext: context
         )
         
-        #expect(resultImage.extent.size == size)
+        // When zoomed in by 2.0, the frame should be twice as large
+        let expectedSize = CGSize(width: size.width * 2.0, height: size.height * 2.0)
+        #expect(resultImage.extent.size == expectedSize)
     }
     
     @Test("AnimatedZoomEffect progress calculation")
@@ -152,7 +154,12 @@ struct ZoomEffectTests {
                 at: time,
                 renderContext: context
             )
-            #expect(result.extent.size == size)
+            // Calculate expected size based on progress
+            let progress = CMTimeGetSeconds(time) / CMTimeGetSeconds(duration)
+            let currentZoom = 1.0 + (2.0 - 1.0) * min(1.0, max(0.0, progress))
+            let expectedSize = CGSize(width: size.width * currentZoom, height: size.height * currentZoom)
+            #expect(abs(result.extent.size.width - expectedSize.width) < 0.01)
+            #expect(abs(result.extent.size.height - expectedSize.height) < 0.01)
         }
     }
 }

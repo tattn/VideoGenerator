@@ -27,15 +27,13 @@ public struct ZoomEffect: Effect, Sendable {
         )
         
         // Create transform for zoom effect
+        // Scale the image up by zoomFactor
         let transform = CGAffineTransform(translationX: centerPoint.x, y: centerPoint.y)
-            .scaledBy(x: CGFloat(1.0 / zoomFactor), y: CGFloat(1.0 / zoomFactor))
+            .scaledBy(x: CGFloat(zoomFactor), y: CGFloat(zoomFactor))
             .translatedBy(x: -centerPoint.x, y: -centerPoint.y)
         
-        // Apply transform
-        let transformedImage = image.transformed(by: transform)
-        
-        // Crop to original bounds to prevent edge stretching
-        return transformedImage.cropped(to: imageExtent)
+        // Apply transform - this will scale both pixel data and frame
+        return image.transformed(by: transform)
     }
 }
 
@@ -152,34 +150,24 @@ public struct KenBurnsEffect: Effect, Sendable {
         // First, crop the image to the desired rectangle
         let croppedImage = image.cropped(to: actualRect)
         
-        // Then scale it to fill the original extent
-        let scaleX = imageExtent.width / actualRect.width
-        let scaleY = imageExtent.height / actualRect.height
+        // Calculate the zoom factor based on the current rectangle
+        // A smaller rectangle means more zoom (inverse relationship)
+        let zoomFactor = 1.0 / currentRect.width // Assuming width and height scale proportionally
+        
+        // Calculate the new frame size after zoom
+        let newWidth = imageExtent.width * zoomFactor
+        let newHeight = imageExtent.height * zoomFactor
+        
+        // Calculate scale to reach the target size
+        let scaleX = newWidth / actualRect.width
+        let scaleY = newHeight / actualRect.height
         let scale = min(scaleX, scaleY) // Maintain aspect ratio
         
-        // Calculate centering offset if aspect ratios don't match
-        let scaledWidth = actualRect.width * scale
-        let scaledHeight = actualRect.height * scale
-        let offsetX = (imageExtent.width - scaledWidth) / 2
-        let offsetY = (imageExtent.height - scaledHeight) / 2
+        // Create transform to scale the cropped image
+        let transform = CGAffineTransform(scaleX: scale, y: scale)
         
-        // Create transform to scale and center the cropped image
-        let transform = CGAffineTransform(translationX: offsetX, y: offsetY)
-            .scaledBy(x: scale, y: scale)
-        
-        // Apply transform
-        let transformedImage = croppedImage.transformed(by: transform)
-        
-        // Create a background to ensure the output fills the entire extent
-        let backgroundColor = CIImage(color: CIColor.clear).cropped(to: imageExtent)
-        
-        // Composite the transformed image over the background
-        let compositeFilter = CIFilter(name: "CISourceOverCompositing")!
-        compositeFilter.setValue(transformedImage, forKey: kCIInputImageKey)
-        compositeFilter.setValue(backgroundColor, forKey: kCIInputBackgroundImageKey)
-        
-        // Crop to original bounds to ensure exact size
-        return compositeFilter.outputImage!.cropped(to: imageExtent)
+        // Apply transform - this will scale both pixel data and frame
+        return croppedImage.transformed(by: transform)
     }
 }
 
