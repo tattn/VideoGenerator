@@ -239,7 +239,20 @@ public struct CodableClip: Codable, Sendable {
 public struct CodableEffect: Codable, Sendable {
     let id: String
     let type: String
-    let parameters: [String: CodableSendableValue]
+    let parameters: CodableEffectParameters
+}
+
+// MARK: - Codable Effect Parameters
+
+public struct CodableEffectParameters: Codable, Sendable {
+    let double: Double?
+    let float: Float?
+    let int: Int?
+    let bool: Bool?
+    let string: String?
+    let color: CodableCGColor?
+    let size: CodableCGSize?
+    let point: CodableCGPoint?
 }
 
 // MARK: - Codable SendableValue

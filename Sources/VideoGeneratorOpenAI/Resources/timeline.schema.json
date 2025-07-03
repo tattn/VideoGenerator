@@ -324,98 +324,10 @@
           "description": "Text alignment"
         },
         "shapeType": {
-          "oneOf": [
-            {
-              "type": "string",
-              "enum": [
-                "rectangle",
-                "circle",
-                "ellipse",
-                "triangle"
-              ]
-            },
-            {
-              "type": "object",
-              "required": ["roundedRectangle"],
-              "properties": {
-                "roundedRectangle": {
-                  "type": "object",
-                  "properties": {
-                    "cornerRadius": {
-                      "type": "number",
-                      "minimum": 0
-                    }
-                  },
-                  "required": [
-                    "cornerRadius"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": ["polygon"],
-              "properties": {
-                "polygon": {
-                  "type": "object",
-                  "properties": {
-                    "sides": {
-                      "type": "integer",
-                      "minimum": 3
-                    }
-                  },
-                  "required": [
-                    "sides"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": ["star"],
-              "properties": {
-                "star": {
-                  "type": "object",
-                  "properties": {
-                    "points": {
-                      "type": "integer",
-                      "minimum": 3
-                    },
-                    "innerRadius": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1
-                    }
-                  },
-                  "required": [
-                    "points",
-                    "innerRadius"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": ["path"],
-              "properties": {
-                "path": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/pathElement"
-                  }
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "string",
+            "object",
+            "null"
           ],
           "description": "Type of shape"
         },
@@ -530,95 +442,100 @@
         "parameters": {
           "type": "object",
           "description": "Effect parameters",
-          "additionalProperties": {
-            "$ref": "#/definitions/sendableValue"
-          }
-        }
-      }
-    },
-    "sendableValue": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": ["double"],
           "properties": {
             "double": {
-              "type": "number"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["float"],
-          "properties": {
+              "type": ["number", "null"]
+            },
             "float": {
-              "type": "number"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["int"],
-          "properties": {
+              "type": ["number", "null"]
+            },
             "int": {
-              "type": "integer"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["bool"],
-          "properties": {
+              "type": ["integer", "null"]
+            },
             "bool": {
-              "type": "boolean"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["string"],
-          "properties": {
+              "type": ["boolean", "null"]
+            },
             "string": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["color"],
-          "properties": {
+              "type": ["string", "null"]
+            },
             "color": {
-              "$ref": "#/definitions/color"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["size"],
-          "properties": {
+              "type": ["object", "null"],
+              "properties": {
+                "red": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Red component (0-1)"
+                },
+                "green": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Green component (0-1)"
+                },
+                "blue": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Blue component (0-1)"
+                },
+                "alpha": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Alpha component (0-1)"
+                }
+              },
+              "required": [
+                "red",
+                "green",
+                "blue",
+                "alpha"
+              ],
+              "additionalProperties": false
+            },
             "size": {
-              "$ref": "#/definitions/size"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["point"],
-          "properties": {
+              "type": ["object", "null"],
+              "properties": {
+                "width": {
+                  "type": "number",
+                  "minimum": 1,
+                  "description": "Width in pixels"
+                },
+                "height": {
+                  "type": "number",
+                  "minimum": 1,
+                  "description": "Height in pixels"
+                }
+              },
+              "required": [
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            },
             "point": {
-              "$ref": "#/definitions/point"
+              "type": ["object", "null"],
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "X coordinate"
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y coordinate"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
         }
-      ]
+      }
     },
     "time": {
       "type": "object",
@@ -799,195 +716,6 @@
           "description": "Shadow blur radius"
         }
       }
-    },
-    "pathElement": {
-      "oneOf": [
-        {
-          "type": "string",
-          "enum": ["closeSubpath"]
-        },
-        {
-          "type": "object",
-          "required": ["moveTo"],
-          "properties": {
-            "moveTo": {
-              "type": "object",
-              "properties": {
-                "x": {
-                  "type": "number"
-                },
-                "y": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "x",
-                "y"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["lineTo"],
-          "properties": {
-            "lineTo": {
-              "type": "object",
-              "properties": {
-                "x": {
-                  "type": "number"
-                },
-                "y": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "x",
-                "y"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["quadCurveTo"],
-          "properties": {
-            "quadCurveTo": {
-              "type": "object",
-              "properties": {
-                "x1": {
-                  "type": "number"
-                },
-                "y1": {
-                  "type": "number"
-                },
-                "x": {
-                  "type": "number"
-                },
-                "y": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "x1",
-                "y1",
-                "x",
-                "y"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["curveTo"],
-          "properties": {
-            "curveTo": {
-              "type": "object",
-              "properties": {
-                "x1": {
-                  "type": "number"
-                },
-                "y1": {
-                  "type": "number"
-                },
-                "x2": {
-                  "type": "number"
-                },
-                "y2": {
-                  "type": "number"
-                },
-                "x": {
-                  "type": "number"
-                },
-                "y": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "x1",
-                "y1",
-                "x2",
-                "y2",
-                "x",
-                "y"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["arc"],
-          "properties": {
-            "arc": {
-              "type": "object",
-              "properties": {
-                "center": {
-                  "$ref": "#/definitions/point"
-                },
-                "radius": {
-                  "type": "number",
-                  "minimum": 0
-                },
-                "startAngle": {
-                  "type": "number"
-                },
-                "endAngle": {
-                  "type": "number"
-                },
-                "clockwise": {
-                  "type": "boolean"
-                }
-              },
-              "required": [
-                "center",
-                "radius",
-                "startAngle",
-                "endAngle",
-                "clockwise"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["addRect"],
-          "properties": {
-            "addRect": {
-              "$ref": "#/definitions/rect"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": ["addEllipse"],
-          "properties": {
-            "addEllipse": {
-              "type": "object",
-              "properties": {
-                "in": {
-                  "$ref": "#/definitions/rect"
-                }
-              },
-              "required": [
-                "in"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
     }
   }
 }
