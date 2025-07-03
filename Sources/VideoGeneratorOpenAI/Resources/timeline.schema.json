@@ -68,7 +68,7 @@
         },
         "clips": {
           "type": "array",
-          "description": "Array of clips in the track",
+          "description": "Array of clips in the track. REQUIRED: Must contain at least one clip - never generate empty arrays. Each track must have relevant clips based on its type (video/image clips for video tracks, audio clips for audio tracks, etc.)",
           "items": {
             "$ref": "#/definitions/clip"
           }
