@@ -458,13 +458,100 @@ public actor OpenAIClient: Sendable {
         }
     }
     
-    private func loadTimelineSchema() throws -> [String: Any] {
+    nonisolated private func loadTimelineSchema() throws -> [String: Any] {
         guard let url = Bundle.module.url(forResource: "timeline.schema", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let schema = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw OpenAIError.invalidTimelineSchema
         }
-        return schema
+        
+        // Clean and transform the schema for OpenAI API compatibility
+        return try transformSchemaForOpenAI(schema)
+    }
+    
+    nonisolated private func transformSchemaForOpenAI(_ schema: [String: Any]) throws -> [String: Any] {
+        // OpenAI doesn't support the definitions section, so we need to inline all $ref references
+        let definitions = schema["definitions"] as? [String: Any] ?? [:]
+        
+        // First resolve all references to inline the definitions
+        let resolved = resolveReferences(in: schema, definitions: definitions)
+        
+        // Then clean up unsupported fields
+        return cleanSchemaForOpenAI(resolved)
+    }
+    
+    nonisolated private func resolveReferences(in schema: [String: Any], definitions: [String: Any]) -> [String: Any] {
+        var resolved = [String: Any]()
+        
+        for (key, value) in schema {
+            if let dictValue = value as? [String: Any] {
+                // Check if this is a $ref
+                if let ref = dictValue["$ref"] as? String {
+                    // Extract the definition name from the $ref
+                    let defName = ref.replacingOccurrences(of: "#/definitions/", with: "")
+                    if let definition = definitions[defName] as? [String: Any] {
+                        // Recursively resolve the definition
+                        resolved[key] = resolveReferences(in: definition, definitions: definitions)
+                    } else {
+                        // Keep the original if we can't resolve
+                        resolved[key] = dictValue
+                    }
+                } else {
+                    // Recursively process nested objects
+                    resolved[key] = resolveReferences(in: dictValue, definitions: definitions)
+                }
+            } else if let arrayValue = value as? [[String: Any]] {
+                // Process arrays of objects
+                resolved[key] = arrayValue.map { resolveReferences(in: $0, definitions: definitions) }
+            } else if let arrayValue = value as? [Any] {
+                // Process mixed arrays
+                resolved[key] = arrayValue.map { item -> Any in
+                    if let dictItem = item as? [String: Any] {
+                        return resolveReferences(in: dictItem, definitions: definitions)
+                    }
+                    return item
+                }
+            } else {
+                // Keep primitive values as-is
+                resolved[key] = value
+            }
+        }
+        
+        return resolved
+    }
+    
+    nonisolated private func cleanSchemaForOpenAI(_ schema: [String: Any]) -> [String: Any] {
+        var cleaned = [String: Any]()
+        
+        for (key, value) in schema {
+            // Skip OpenAI-unsupported fields but keep $ref
+            if key == "$schema" || key == "$id" || key == "format" {
+                continue
+            }
+            
+            // Special handling for definitions - OpenAI doesn't support this section
+            // but we should keep the structure of the main schema intact
+            if key == "definitions" {
+                continue
+            }
+            
+            if let dictValue = value as? [String: Any] {
+                cleaned[key] = cleanSchemaForOpenAI(dictValue)
+            } else if let arrayValue = value as? [[String: Any]] {
+                cleaned[key] = arrayValue.map { cleanSchemaForOpenAI($0) }
+            } else if let arrayValue = value as? [Any] {
+                cleaned[key] = arrayValue.map { item -> Any in
+                    if let dictItem = item as? [String: Any] {
+                        return cleanSchemaForOpenAI(dictItem)
+                    }
+                    return item
+                }
+            } else {
+                cleaned[key] = value
+            }
+        }
+        
+        return cleaned
     }
     
     private func processImageGeneration(in timeline: Timeline) async throws -> Timeline {
