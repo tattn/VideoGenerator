@@ -288,6 +288,11 @@ public actor OpenAIClient: Sendable {
     public struct Message: Codable, Sendable {
         let role: String
         let content: String
+
+        public init(role: String, content: String) {
+            self.role = role
+            self.content = content
+        }
     }
     
     public struct ResponseFormat: Encodable, Sendable {
