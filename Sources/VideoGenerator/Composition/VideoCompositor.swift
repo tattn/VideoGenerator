@@ -91,8 +91,13 @@ public actor VideoCompositor {
             let canvasSize = renderContext.size
             image = try await renderTextForClip(mediaItem as! TextMediaItem, clip: clip, canvasSize: canvasSize)
         } else if mediaItem.mediaType == .shape {
-            // Shapes are rendered through renderContext
-            image = try await renderContext.image(for: mediaItem)
+            // Check if it's a transition media item
+            if let transitionItem = mediaItem as? TransitionMediaItem {
+                image = try await renderTransition(transitionItem, clip: clip, at: time)
+            } else {
+                // Regular shapes are rendered through renderContext
+                image = try await renderContext.image(for: mediaItem)
+            }
         } else {
             image = try await renderContext.image(for: mediaItem)
         }
@@ -443,6 +448,127 @@ public actor VideoCompositor {
         
         let cgImage = try imageGenerator.copyCGImage(at: time, actualTime: nil)
         return CIImage(cgImage: cgImage)
+    }
+    
+    // MARK: - Transition Support
+    
+    private var metalTransitionProcessor: MetalTransitionProcessor?
+    
+    private func renderTransition(_ transitionItem: TransitionMediaItem, clip: Clip, at time: CMTime) async throws -> CIImage {
+        // Calculate progress within the clip
+        let clipStartTime = clip.timeRange.start
+        let clipDuration = clip.timeRange.duration
+        let clipElapsed = time - clipStartTime
+        let progress = Float(clipElapsed.seconds / clipDuration.seconds)
+        let clampedProgress = max(0, min(1, progress))
+        
+        // Get the current frame from all video tracks
+        // Create a black background as the base
+        let inputImage = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 1))
+            .cropped(to: CGRect(origin: .zero, size: renderContext.size))
+        
+        // For transitions, inputImage represents the current scene,
+        // which should be provided by the compositing context.
+        // Since transitions overlay the entire screen, we'll use a transparent base
+        
+        // Create output image (what we're transitioning to)
+        let outputImage = CIImage(color: CIColor(cgColor: transitionItem.parameters.color))
+            .cropped(to: CGRect(origin: .zero, size: renderContext.size))
+        
+        // Apply the transition effect
+        let transitionEffect: TransitionEffect
+        
+        switch transitionItem.transitionType {
+        case .fade:
+            // Use dissolve for fade effect
+            transitionEffect = DissolveTransitionEffect()
+        case .dissolve:
+            transitionEffect = DissolveTransitionEffect()
+        case .wipeLeft:
+            transitionEffect = SlidePushTransitionEffect(direction: .left)
+        case .wipeRight:
+            transitionEffect = SlidePushTransitionEffect(direction: .right)
+        case .wipeUp:
+            transitionEffect = SlidePushTransitionEffect(direction: .up)
+        case .wipeDown:
+            transitionEffect = SlidePushTransitionEffect(direction: .down)
+        case .wipeRadial:
+            transitionEffect = RadialWipeTransitionEffect()
+        case .wipeDiagonal:
+            transitionEffect = DiagonalWipeTransitionEffect()
+        case .slideLeft:
+            transitionEffect = SlidePushTransitionEffect(direction: .left)
+        case .slideRight:
+            transitionEffect = SlidePushTransitionEffect(direction: .right)
+        case .slideUp:
+            transitionEffect = SlidePushTransitionEffect(direction: .up)
+        case .slideDown:
+            transitionEffect = SlidePushTransitionEffect(direction: .down)
+        case .slidePush:
+            transitionEffect = SlidePushTransitionEffect(direction: .left)
+        case .circleExpand:
+            transitionEffect = CircleExpandTransitionEffect()
+        case .circleContract:
+            // Reverse the progress for contract effect
+            let reversedProgress = 1 - clampedProgress
+            return CircleExpandTransitionEffect().apply(
+                inputImage: outputImage,
+                outputImage: inputImage,
+                progress: reversedProgress,
+                parameters: transitionItem.parameters
+            )
+        case .rectangleExpand:
+            transitionEffect = RectangleExpandTransitionEffect()
+        case .diamondExpand:
+            transitionEffect = DiamondExpandTransitionEffect()
+        case .blindsHorizontal:
+            transitionEffect = BlindsHorizontalTransitionEffect()
+        case .blindsVertical:
+            transitionEffect = BlindsVerticalTransitionEffect()
+        case .ripple:
+            transitionEffect = RippleTransitionEffect()
+        case .swirl:
+            transitionEffect = SwirlTransitionEffect()
+        case .pixelate:
+            transitionEffect = PixelateTransitionEffect()
+        case .mosaic:
+            transitionEffect = MosaicTransitionEffect()
+        case .kaleidoscope:
+            transitionEffect = KaleidoscopeTransitionEffect()
+        case .glitch:
+            transitionEffect = GlitchTransitionEffect()
+        case .shatter:
+            transitionEffect = ShatterTransitionEffect()
+        case .burn:
+            transitionEffect = BurnTransitionEffect()
+        case .pageFlip:
+            transitionEffect = PageFlipTransitionEffect()
+        case .metalWave, .metalTwist, .metalZoom, .metalMorph, .metalDisplace, .metalLiquid:
+            // Use Metal transition processor for advanced effects
+            if metalTransitionProcessor == nil {
+                metalTransitionProcessor = try? MetalTransitionProcessor()
+            }
+            
+            if let processor = metalTransitionProcessor {
+                return try await processor.applyTransition(
+                    type: transitionItem.transitionType,
+                    inputImage: inputImage,
+                    outputImage: outputImage,
+                    progress: clampedProgress,
+                    parameters: transitionItem.parameters
+                )
+            } else {
+                // Fallback to dissolve if Metal is not available
+                transitionEffect = DissolveTransitionEffect()
+            }
+        }
+        
+        return transitionEffect.apply(
+            inputImage: inputImage,
+            outputImage: outputImage,
+            progress: clampedProgress,
+            parameters: transitionItem.parameters
+        )
     }
 }
 
