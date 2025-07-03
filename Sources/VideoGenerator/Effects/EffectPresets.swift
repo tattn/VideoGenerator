@@ -347,6 +347,106 @@ public struct EffectPresets {
         )
     }
     
+    // MARK: - Saliency Zoom Presets
+    
+    /// Attention-based saliency zoom (focuses on faces and people)
+    public static func saliencyAttention(
+        duration: TimeInterval = 4.0,
+        zoomFactor: Float = 2.0
+    ) -> CompositeEffect {
+        return CompositeEffect(
+            effects: [
+                SaliencyZoomEffect.attentionBased(
+                    zoomFactor: zoomFactor,
+                    duration: CMTime(seconds: duration, preferredTimescale: 600)
+                )
+            ],
+            blendMode: .sequential
+        )
+    }
+    
+    /// Object-based saliency zoom (focuses on general objects)
+    public static func saliencyObject(
+        duration: TimeInterval = 3.0,
+        zoomFactor: Float = 1.5
+    ) -> CompositeEffect {
+        return CompositeEffect(
+            effects: [
+                SaliencyZoomEffect.objectBased(
+                    zoomFactor: zoomFactor,
+                    duration: CMTime(seconds: duration, preferredTimescale: 600)
+                )
+            ],
+            blendMode: .sequential
+        )
+    }
+    
+    /// Subtle saliency zoom with minimal movement
+    public static func saliencySubtle(
+        duration: TimeInterval = 5.0
+    ) -> CompositeEffect {
+        return CompositeEffect(
+            effects: [
+                SaliencyZoomEffect.subtle(
+                    duration: CMTime(seconds: duration, preferredTimescale: 600)
+                )
+            ],
+            blendMode: .sequential
+        )
+    }
+    
+    /// Dramatic saliency zoom with fast movement
+    public static func saliencyDramatic(
+        duration: TimeInterval = 2.0
+    ) -> CompositeEffect {
+        return CompositeEffect(
+            effects: [
+                SaliencyZoomEffect.dramatic(
+                    duration: CMTime(seconds: duration, preferredTimescale: 600)
+                )
+            ],
+            blendMode: .sequential
+        )
+    }
+    
+    /// Saliency zoom combined with color grading
+    public static func saliencyWithGrade(
+        duration: TimeInterval = 4.0,
+        colorGrade: ColorGradeStyle = .vintage,
+        saliencyMode: SaliencyMode = .attention
+    ) -> CompositeEffect {
+        let saliencyEffect: SaliencyZoomEffect
+        switch saliencyMode {
+        case .attention:
+            saliencyEffect = SaliencyZoomEffect.attentionBased(
+                zoomFactor: 1.8,
+                duration: CMTime(seconds: duration, preferredTimescale: 600)
+            )
+        case .object:
+            saliencyEffect = SaliencyZoomEffect.objectBased(
+                zoomFactor: 1.5,
+                duration: CMTime(seconds: duration, preferredTimescale: 600)
+            )
+        }
+        
+        let gradeEffect: CompositeEffect
+        switch colorGrade {
+        case .vintage:
+            gradeEffect = vintageGrade()
+        case .moody:
+            gradeEffect = moodyGrade()
+        case .bright:
+            gradeEffect = brightGrade()
+        case .none:
+            return CompositeEffect(effects: [saliencyEffect], blendMode: .sequential)
+        }
+        
+        return CompositeEffect(
+            effects: [saliencyEffect, gradeEffect],
+            blendMode: .sequential
+        )
+    }
+    
     // MARK: - Color Grading Presets
     
     /// Vintage color grading
@@ -475,6 +575,11 @@ public struct EffectPresets {
         case shake
         case pulse
     }
+    
+    public enum SaliencyMode {
+        case attention
+        case object
+    }
 }
 
 // MARK: - Convenience Extensions
@@ -510,6 +615,14 @@ extension CompositeEffect {
             return EffectPresets.moodyGrade()
         case .brightGrade:
             return EffectPresets.brightGrade()
+        case .saliencyAttention:
+            return EffectPresets.saliencyAttention(duration: duration ?? 4.0)
+        case .saliencyObject:
+            return EffectPresets.saliencyObject(duration: duration ?? 3.0)
+        case .saliencySubtle:
+            return EffectPresets.saliencySubtle(duration: duration ?? 5.0)
+        case .saliencyDramatic:
+            return EffectPresets.saliencyDramatic(duration: duration ?? 2.0)
         }
     }
 }
@@ -528,5 +641,9 @@ extension EffectPresets {
         case vintageGrade
         case moodyGrade
         case brightGrade
+        case saliencyAttention
+        case saliencyObject
+        case saliencySubtle
+        case saliencyDramatic
     }
 }

@@ -3,7 +3,7 @@ import VideoGenerator
 import AVFoundation
 
 struct EffectPresetsExample: View {
-    @State private var selectedPreset: EffectPresets.PresetType = .kenBurnsClassic
+    @State private var selectedPreset: EffectPresets.PresetType = .saliencyAttention
     @State private var isExporting = false
     @State private var exportProgress: Double = 0
     @State private var exportedURL: URL?
@@ -34,6 +34,13 @@ struct EffectPresetsExample: View {
                     Text("Vintage Grade").tag(EffectPresets.PresetType.vintageGrade)
                     Text("Moody Grade").tag(EffectPresets.PresetType.moodyGrade)
                     Text("Bright Grade").tag(EffectPresets.PresetType.brightGrade)
+                }
+                
+                Group {
+                    Text("Saliency Attention").tag(EffectPresets.PresetType.saliencyAttention)
+                    Text("Saliency Object").tag(EffectPresets.PresetType.saliencyObject)
+                    Text("Saliency Subtle").tag(EffectPresets.PresetType.saliencySubtle)
+                    Text("Saliency Dramatic").tag(EffectPresets.PresetType.saliencyDramatic)
                 }
             }
             .pickerStyle(MenuPickerStyle())
