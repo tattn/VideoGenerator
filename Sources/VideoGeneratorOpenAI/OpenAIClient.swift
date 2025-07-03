@@ -260,7 +260,17 @@ public actor OpenAIClient: Sendable {
         let model: String
         let messages: [Message]
         let responseFormat: ResponseFormat?
-        
+
+        public init(
+            model: String,
+            messages: [Message],
+            responseFormat: ResponseFormat? = nil
+        ) {
+            self.model = model
+            self.messages = messages
+            self.responseFormat = responseFormat
+        }
+
         enum CodingKeys: String, CodingKey {
             case model
             case messages
@@ -283,7 +293,12 @@ public actor OpenAIClient: Sendable {
     public struct ResponseFormat: Encodable, Sendable {
         let type: String
         let jsonSchema: JSONSchema?
-        
+
+        public init(type: String, jsonSchema: JSONSchema? = nil) {
+            self.type = type
+            self.jsonSchema = jsonSchema
+        }
+
         enum CodingKeys: String, CodingKey {
             case type
             case jsonSchema = "json_schema"
