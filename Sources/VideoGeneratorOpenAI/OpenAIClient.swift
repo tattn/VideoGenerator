@@ -286,8 +286,8 @@ public actor OpenAIClient: Sendable {
     }
     
     public struct Message: Codable, Sendable {
-        let role: String
-        let content: String
+        public let role: String
+        public let content: String
 
         public init(role: String, content: String) {
             self.role = role
@@ -347,10 +347,10 @@ public actor OpenAIClient: Sendable {
     }
     
     public struct ChatCompletionResponse: Codable, Sendable {
-        let choices: [Choice]
-        
+        public let choices: [Choice]
+
         public struct Choice: Codable, Sendable {
-            let message: Message
+            public let message: Message
         }
     }
     
