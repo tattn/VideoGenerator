@@ -599,48 +599,11 @@ public actor OpenAIClient: Sendable {
         }
         
         // Second pass: handle required array after all properties have been processed
-        // OpenAI requires certain properties to be in the required array
-        // but we should only include non-nullable properties
+        // OpenAI strict mode requires ALL properties to be in the required array
         if let properties = cleaned["properties"] as? [String: Any] {
-            var requiredKeys: [String] = []
-            
-            // Check each property to determine if it should be required
-            for (propertyKey, propertyValue) in properties {
-                if let propertyDict = propertyValue as? [String: Any] {
-                    // Check if property is nullable by looking at its type
-                    if let typeValue = propertyDict["type"] {
-                        if let typeArray = typeValue as? [Any] {
-                            // If type is an array and contains "null", it's nullable
-                            let containsNull = typeArray.contains { item in
-                                if let str = item as? String {
-                                    return str == "null"
-                                }
-                                return false
-                            }
-                            if !containsNull {
-                                requiredKeys.append(propertyKey)
-                            }
-                        } else if let _ = typeValue as? String {
-                            // If type is a single string (not array), it's not nullable
-                            requiredKeys.append(propertyKey)
-                        }
-                    }
-                }
-            }
-            
-            // If there's an existing required array, merge it with our calculated required keys
-            if let existingRequired = schema["required"] as? [String] {
-                let existingSet = Set(existingRequired)
-                let calculatedSet = Set(requiredKeys)
-                let allPropertyKeys = Set(properties.keys)
-                
-                // Keep only the required keys that exist in properties and are not nullable
-                let validRequired = existingSet.intersection(allPropertyKeys).intersection(calculatedSet)
-                cleaned["required"] = Array(validRequired).sorted()
-            } else {
-                // Use our calculated required keys
-                cleaned["required"] = requiredKeys.sorted()
-            }
+            // For OpenAI strict mode, all properties must be in the required array
+            let allPropertyKeys = Array(properties.keys).sorted()
+            cleaned["required"] = allPropertyKeys
         } else if let existingRequired = schema["required"] as? [String] {
             // If there are no properties but there is a required array, keep it
             cleaned["required"] = existingRequired
