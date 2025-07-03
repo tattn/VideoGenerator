@@ -7,17 +7,20 @@ public actor OpenAIClient: Sendable {
         public let baseURL: URL
         public let model: String
         public let imageGenerationOptions: ImageGenerationOptions
+        public let requestTimeoutInterval: TimeInterval
         
         public init(
             apiKey: String,
             baseURL: URL = URL(string: "https://api.openai.com/v1")!,
             model: String = "gpt-4.1",
-            imageGenerationOptions: ImageGenerationOptions = ImageGenerationOptions()
+            imageGenerationOptions: ImageGenerationOptions = ImageGenerationOptions(),
+            requestTimeoutInterval: TimeInterval = 300 // Default 5 minutes
         ) {
             self.apiKey = apiKey
             self.baseURL = baseURL
             self.model = model
             self.imageGenerationOptions = imageGenerationOptions
+            self.requestTimeoutInterval = requestTimeoutInterval
         }
     }
     
@@ -142,7 +145,12 @@ public actor OpenAIClient: Sendable {
     
     public init(configuration: Configuration) {
         self.configuration = configuration
-        self.session = URLSession.shared
+        
+        let sessionConfiguration = URLSessionConfiguration.default
+        sessionConfiguration.timeoutIntervalForRequest = configuration.requestTimeoutInterval
+        sessionConfiguration.timeoutIntervalForResource = configuration.requestTimeoutInterval
+        
+        self.session = URLSession(configuration: sessionConfiguration)
     }
     
     public func generateTimeline(prompt: String) async throws -> Timeline {
