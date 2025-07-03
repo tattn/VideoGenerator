@@ -552,9 +552,20 @@ public actor OpenAIClient: Sendable {
         }
         
         // OpenAI requires all properties to be in the required array
+        // and the required array should only contain keys that exist in properties
         if let properties = cleaned["properties"] as? [String: Any] {
-            let allPropertyKeys = Array(properties.keys)
-            cleaned["required"] = allPropertyKeys
+            let allPropertyKeys = Set(properties.keys)
+            
+            // If there's an existing required array, filter it to only include valid keys
+            if let existingRequired = cleaned["required"] as? [String] {
+                let validRequired = existingRequired.filter { allPropertyKeys.contains($0) }
+                // Add any missing property keys
+                let missingKeys = allPropertyKeys.subtracting(validRequired)
+                cleaned["required"] = validRequired + Array(missingKeys)
+            } else {
+                // If no required array exists, add all property keys
+                cleaned["required"] = Array(allPropertyKeys)
+            }
         }
         
         return cleaned
