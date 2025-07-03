@@ -515,7 +515,7 @@ extension CompositeEffect {
 }
 
 extension EffectPresets {
-    public enum PresetType {
+    public enum PresetType: String, CaseIterable {
         case kenBurnsClassic
         case kenBurnsDramatic
         case kenBurnsSubtle
