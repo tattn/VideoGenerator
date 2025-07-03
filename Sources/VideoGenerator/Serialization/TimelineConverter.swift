@@ -113,8 +113,18 @@ public final class TimelineConverter {
                 text: nil,
                 font: nil,
                 color: nil,
-                strokes: nil,
-                shadow: nil,
+                strokeColorRed: nil,
+                strokeColorGreen: nil,
+                strokeColorBlue: nil,
+                strokeColorAlpha: nil,
+                textStrokeWidth: nil,
+                shadowColorRed: nil,
+                shadowColorGreen: nil,
+                shadowColorBlue: nil,
+                shadowColorAlpha: nil,
+                shadowOffsetWidth: nil,
+                shadowOffsetHeight: nil,
+                shadowBlur: nil,
                 behavior: nil,
                 alignment: nil,
                 shapeType: nil,
@@ -143,8 +153,18 @@ public final class TimelineConverter {
                 text: nil,
                 font: nil,
                 color: nil,
-                strokes: nil,
-                shadow: nil,
+                strokeColorRed: nil,
+                strokeColorGreen: nil,
+                strokeColorBlue: nil,
+                strokeColorAlpha: nil,
+                textStrokeWidth: nil,
+                shadowColorRed: nil,
+                shadowColorGreen: nil,
+                shadowColorBlue: nil,
+                shadowColorAlpha: nil,
+                shadowOffsetWidth: nil,
+                shadowOffsetHeight: nil,
+                shadowBlur: nil,
                 behavior: nil,
                 alignment: nil,
                 shapeType: nil,
@@ -155,6 +175,10 @@ public final class TimelineConverter {
             
         case .text:
             let text = mediaItem as! TextMediaItem
+            
+            // Extract first stroke for flattened structure (OpenAI strict mode limitation)
+            let firstStroke = text.strokes.first
+            
             return CodableMediaItem(
                 id: text.id.uuidString,
                 type: .text,
@@ -164,8 +188,42 @@ public final class TimelineConverter {
                 text: text.text,
                 font: CodableFont(text.font),
                 color: CodableCGColor(text.color),
-                strokes: text.strokes.map(CodableTextStroke.init),
-                shadow: text.shadow.map(CodableTextShadow.init),
+                strokeColorRed: firstStroke.map { 
+                    let components = $0.color.components ?? []
+                    return components.count > 0 ? components[0] : 0
+                },
+                strokeColorGreen: firstStroke.map { 
+                    let components = $0.color.components ?? []
+                    return components.count > 1 ? components[1] : 0
+                },
+                strokeColorBlue: firstStroke.map { 
+                    let components = $0.color.components ?? []
+                    return components.count > 2 ? components[2] : 0
+                },
+                strokeColorAlpha: firstStroke.map { 
+                    let components = $0.color.components ?? []
+                    return components.count > 3 ? components[3] : 1
+                },
+                textStrokeWidth: firstStroke.map { $0.width },
+                shadowColorRed: text.shadow.map { 
+                    let components = $0.color.components ?? []
+                    return components.count > 0 ? components[0] : 0
+                },
+                shadowColorGreen: text.shadow.map { 
+                    let components = $0.color.components ?? []
+                    return components.count > 1 ? components[1] : 0
+                },
+                shadowColorBlue: text.shadow.map { 
+                    let components = $0.color.components ?? []
+                    return components.count > 2 ? components[2] : 0
+                },
+                shadowColorAlpha: text.shadow.map { 
+                    let components = $0.color.components ?? []
+                    return components.count > 3 ? components[3] : 1
+                },
+                shadowOffsetWidth: text.shadow.map { $0.offset.width },
+                shadowOffsetHeight: text.shadow.map { $0.offset.height },
+                shadowBlur: text.shadow.map { $0.blur },
                 behavior: convertTextBehavior(text.behavior),
                 alignment: convertTextAlignment(text.alignment),
                 shapeType: nil,
@@ -185,8 +243,18 @@ public final class TimelineConverter {
                 text: nil,
                 font: nil,
                 color: nil,
-                strokes: nil,
-                shadow: nil,
+                strokeColorRed: nil,
+                strokeColorGreen: nil,
+                strokeColorBlue: nil,
+                strokeColorAlpha: nil,
+                textStrokeWidth: nil,
+                shadowColorRed: nil,
+                shadowColorGreen: nil,
+                shadowColorBlue: nil,
+                shadowColorAlpha: nil,
+                shadowOffsetWidth: nil,
+                shadowOffsetHeight: nil,
+                shadowBlur: nil,
                 behavior: nil,
                 alignment: nil,
                 shapeType: nil,
@@ -206,11 +274,21 @@ public final class TimelineConverter {
                 text: nil,
                 font: nil,
                 color: nil,
-                strokes: nil,
-                shadow: nil,
+                strokeColorRed: nil,
+                strokeColorGreen: nil,
+                strokeColorBlue: nil,
+                strokeColorAlpha: nil,
+                textStrokeWidth: nil,
+                shadowColorRed: nil,
+                shadowColorGreen: nil,
+                shadowColorBlue: nil,
+                shadowColorAlpha: nil,
+                shadowOffsetWidth: nil,
+                shadowOffsetHeight: nil,
+                shadowBlur: nil,
                 behavior: nil,
                 alignment: nil,
-                shapeType: convertShapeType(shape.shapeType),
+                shapeType: convertShapeTypeToString(shape.shapeType),
                 fillColor: CodableCGColor(shape.fillColor),
                 strokeColor: CodableCGColor(shape.strokeColor),
                 strokeWidth: shape.strokeWidth
@@ -236,24 +314,28 @@ public final class TimelineConverter {
         }
     }
     
-    private static func convertShapeType(_ type: ShapeType) -> CodableShapeType {
+    private static func convertShapeTypeToString(_ type: ShapeType) -> String? {
         switch type {
         case .rectangle:
-            return .rectangle
-        case .roundedRectangle(let radius):
-            return .roundedRectangle(cornerRadius: radius)
+            return "rectangle"
+        case .roundedRectangle:
+            // Simplified for OpenAI strict mode - only basic shapes supported
+            return "rectangle" 
         case .circle:
-            return .circle
+            return "circle"
         case .ellipse:
-            return .ellipse
+            return "ellipse"
         case .triangle:
-            return .triangle
-        case .polygon(let sides):
-            return .polygon(sides: sides)
-        case .star(let points, let innerRadius):
-            return .star(points: points, innerRadius: innerRadius)
-        case .path(let elements):
-            return .path(elements.map(convertPathElement))
+            return "triangle"
+        case .polygon:
+            // Simplified for OpenAI strict mode
+            return "rectangle"
+        case .star:
+            // Simplified for OpenAI strict mode
+            return "circle"
+        case .path:
+            // Simplified for OpenAI strict mode
+            return "rectangle"
         }
     }
     
@@ -447,14 +529,37 @@ public final class TimelineConverter {
                 throw TimelineSerializationError.missingRequiredField("text properties")
             }
             
+            // Reconstruct strokes and shadow from flattened structure
+            var strokes: [TextStroke] = []
+            if let strokeWidth = codable.textStrokeWidth,
+               let red = codable.strokeColorRed,
+               let green = codable.strokeColorGreen,
+               let blue = codable.strokeColorBlue,
+               let alpha = codable.strokeColorAlpha {
+                let strokeColor = CGColor(red: red, green: green, blue: blue, alpha: alpha)
+                strokes.append(TextStroke(color: strokeColor, width: strokeWidth))
+            }
+            
+            var shadow: TextShadow? = nil
+            if let shadowBlur = codable.shadowBlur,
+               let offsetWidth = codable.shadowOffsetWidth,
+               let offsetHeight = codable.shadowOffsetHeight,
+               let red = codable.shadowColorRed,
+               let green = codable.shadowColorGreen,
+               let blue = codable.shadowColorBlue,
+               let alpha = codable.shadowColorAlpha {
+                let shadowColor = CGColor(red: red, green: green, blue: blue, alpha: alpha)
+                shadow = TextShadow(color: shadowColor, offset: CGSize(width: offsetWidth, height: offsetHeight), blur: shadowBlur)
+            }
+            
             return TextMediaItem(
                 id: UUID(uuidString: codable.id) ?? UUID(),
                 text: text,
                 font: font.ctFont,
                 color: color.cgColor,
                 duration: codable.duration.cmTime,
-                strokes: codable.strokes?.map { $0.textStroke } ?? [],
-                shadow: codable.shadow?.textShadow,
+                strokes: strokes,
+                shadow: shadow,
                 behavior: try convertTextBehavior(behavior),
                 alignment: try convertTextAlignment(alignment)
             )
@@ -479,7 +584,7 @@ public final class TimelineConverter {
             
             return ShapeMediaItem(
                 id: UUID(uuidString: codable.id) ?? UUID(),
-                shapeType: try convertShapeType(shapeType),
+                shapeType: try convertShapeTypeFromString(shapeType),
                 fillColor: fillColor.cgColor,
                 strokeColor: strokeColor.cgColor,
                 strokeWidth: strokeWidth,
@@ -508,24 +613,19 @@ public final class TimelineConverter {
         }
     }
     
-    private static func convertShapeType(_ type: CodableShapeType) throws -> ShapeType {
+    private static func convertShapeTypeFromString(_ type: String) throws -> ShapeType {
         switch type {
-        case .rectangle:
+        case "rectangle":
             return .rectangle
-        case .roundedRectangle(let radius):
-            return .roundedRectangle(cornerRadius: radius)
-        case .circle:
+        case "circle":
             return .circle
-        case .ellipse:
+        case "ellipse":
             return .ellipse
-        case .triangle:
+        case "triangle":
             return .triangle
-        case .polygon(let sides):
-            return .polygon(sides: sides)
-        case .star(let points, let innerRadius):
-            return .star(points: points, innerRadius: innerRadius)
-        case .path(let elements):
-            return .path(try elements.map(convertPathElement))
+        default:
+            // Default to rectangle for unsupported shapes in OpenAI strict mode
+            return .rectangle
         }
     }
     

@@ -150,51 +150,66 @@ public struct CodableMediaItem: Codable, Sendable {
     let text: String?
     let font: CodableFont?
     let color: CodableCGColor?
-    let strokes: [CodableTextStroke]?
-    let shadow: CodableTextShadow?
+    
+    // Flattened text stroke properties (single stroke support for OpenAI strict mode)
+    let strokeColorRed: CGFloat?
+    let strokeColorGreen: CGFloat?
+    let strokeColorBlue: CGFloat?
+    let strokeColorAlpha: CGFloat?
+    let textStrokeWidth: CGFloat?
+    
+    // Flattened shadow properties
+    let shadowColorRed: CGFloat?
+    let shadowColorGreen: CGFloat?
+    let shadowColorBlue: CGFloat?
+    let shadowColorAlpha: CGFloat?
+    let shadowOffsetWidth: CGFloat?
+    let shadowOffsetHeight: CGFloat?
+    let shadowBlur: CGFloat?
+    
     let behavior: String?
     let alignment: String?
     
     // Shape properties
-    let shapeType: CodableShapeType?
+    let shapeType: String? // Simplified for OpenAI strict mode
     let fillColor: CodableCGColor?
     let strokeColor: CodableCGColor?
     let strokeWidth: CGFloat?
 }
 
-// MARK: - Codable Text Stroke
+// MARK: - Codable Text Stroke (Deprecated - using flattened structure for OpenAI strict mode)
 
-public struct CodableTextStroke: Codable, Sendable {
-    let color: CodableCGColor
-    let width: CGFloat
-    
-    init(_ stroke: TextStroke) {
-        self.color = CodableCGColor(stroke.color)
-        self.width = stroke.width
-    }
-    
-    var textStroke: TextStroke {
-        TextStroke(color: color.cgColor, width: width)
-    }
-}
+// public struct CodableTextStroke: Codable, Sendable {
+//     let color: CodableCGColor
+//     let width: CGFloat
+//     
+//     init(_ stroke: TextStroke) {
+//         self.color = CodableCGColor(stroke.color)
+//         self.width = stroke.width
+//     }
+//     
+//     var textStroke: TextStroke {
+//         TextStroke(color: color.cgColor, width: width)
+//     }
+// }
 
-// MARK: - Codable Text Shadow
+// MARK: - Codable Text Shadow (Deprecated - using flattened structure for OpenAI strict mode)
 
-public struct CodableTextShadow: Codable, Sendable {
-    let color: CodableCGColor
-    let offset: CodableCGSize
-    let blur: CGFloat
-    
-    init(_ shadow: TextShadow) {
-        self.color = CodableCGColor(shadow.color)
-        self.offset = CodableCGSize(shadow.offset)
-        self.blur = shadow.blur
-    }
-    
-    var textShadow: TextShadow {
-        TextShadow(color: color.cgColor, offset: offset.cgSize, blur: blur)
-    }
-}
+// public struct CodableTextShadow: Codable, Sendable {
+//     let color: CodableCGColor
+//     let offset: CodableCGSize
+//     let blur: CGFloat
+//     
+//     init(_ shadow: TextShadow) {
+//         self.color = CodableCGColor(shadow.color)
+//         self.offset = CodableCGSize(shadow.offset)
+//         self.blur = shadow.blur
+//     }
+//     
+//     var textShadow: TextShadow {
+//         TextShadow(color: color.cgColor, offset: offset.cgSize, blur: blur)
+//     }
+// }
 
 // MARK: - Codable Shape Type
 

@@ -259,41 +259,109 @@
           "additionalProperties": false,
           "description": "Text color"
         },
-        "strokes": {
+        "strokeColorRed": {
           "type": [
-            "array",
+            "number",
             "null"
           ],
-          "items": {
-            "$ref": "#/definitions/textStroke"
-          },
-          "description": "Text strokes/outlines"
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Stroke color red component (0-1)"
         },
-        "shadow": {
+        "strokeColorGreen": {
           "type": [
-            "object",
+            "number",
             "null"
           ],
-          "properties": {
-            "color": {
-              "$ref": "#/definitions/color"
-            },
-            "offset": {
-              "$ref": "#/definitions/size"
-            },
-            "blur": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Shadow blur radius"
-            }
-          },
-          "required": [
-            "color",
-            "offset",
-            "blur"
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Stroke color green component (0-1)"
+        },
+        "strokeColorBlue": {
+          "type": [
+            "number",
+            "null"
           ],
-          "additionalProperties": false,
-          "description": "Text shadow"
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Stroke color blue component (0-1)"
+        },
+        "strokeColorAlpha": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Stroke color alpha component (0-1)"
+        },
+        "textStrokeWidth": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Text stroke width"
+        },
+        "shadowColorRed": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Shadow color red component (0-1)"
+        },
+        "shadowColorGreen": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Shadow color green component (0-1)"
+        },
+        "shadowColorBlue": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Shadow color blue component (0-1)"
+        },
+        "shadowColorAlpha": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Shadow color alpha component (0-1)"
+        },
+        "shadowOffsetWidth": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "Shadow offset width in pixels"
+        },
+        "shadowOffsetHeight": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "Shadow offset height in pixels"
+        },
+        "shadowBlur": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Shadow blur radius"
         },
         "behavior": {
           "type": [
