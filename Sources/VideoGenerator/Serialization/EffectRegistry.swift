@@ -133,6 +133,13 @@ public actor EffectRegistry {
             // Composite effects need special handling for nested effects
             CompositeEffect(effects: [])
         }
+        
+        // Saliency Zoom Effect
+        register(SaliencyZoomEffect.self, identifier: "saliencyZoom") { id, parameters in
+            var effect = SaliencyZoomEffect(id: id)
+            effect.parameters = parameters
+            return effect
+        }
     }
 }
 
