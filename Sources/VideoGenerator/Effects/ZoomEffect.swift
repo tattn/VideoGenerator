@@ -149,7 +149,6 @@ public struct KenBurnsEffect: Effect, Sendable {
         
         let imageExtent = image.extent
         
-        // Create transform for Ken Burns effect
         // Convert from normalized coordinates to actual image coordinates
         let actualRect = CGRect(
             x: currentRect.origin.x * imageExtent.width,
@@ -158,46 +157,44 @@ public struct KenBurnsEffect: Effect, Sendable {
             height: currentRect.height * imageExtent.height
         )
         
-        // Calculate scale to fit the rect into the full image extent
+        // First, crop the image to the desired rectangle
+        let croppedImage = image.cropped(to: actualRect)
+        
+        // Then scale it to fill the original extent
         let scaleX = imageExtent.width / actualRect.width
         let scaleY = imageExtent.height / actualRect.height
         let scale = min(scaleX, scaleY) // Maintain aspect ratio
         
-        // Create transform
-        let transform = CGAffineTransform(translationX: -actualRect.origin.x, y: -actualRect.origin.y)
+        // Calculate centering offset if aspect ratios don't match
+        let scaledWidth = actualRect.width * scale
+        let scaledHeight = actualRect.height * scale
+        let offsetX = (imageExtent.width - scaledWidth) / 2
+        let offsetY = (imageExtent.height - scaledHeight) / 2
+        
+        // Create transform to scale and center the cropped image
+        let transform = CGAffineTransform(translationX: offsetX, y: offsetY)
             .scaledBy(x: scale, y: scale)
         
         // Apply transform
-        let transformedImage = image.transformed(by: transform)
+        let transformedImage = croppedImage.transformed(by: transform)
         
-        // If scale is less than 1 (zoomed out), we need to composite over a clear background
-        if scale < 1.0 {
-            // Create clear background
-            let backgroundColor = CIImage(color: CIColor.clear).cropped(to: imageExtent)
-            
-            // Create a clamp filter first to prevent edge stretching
-            let clampFilter = CIFilter(name: "CIAffineClamp")!
-            clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
-            clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
-            let clampedImage = clampFilter.outputImage!
-            
-            // Composite the clamped image over the clear background
-            let compositeFilter = CIFilter(name: "CISourceOverCompositing")!
-            compositeFilter.setValue(clampedImage, forKey: kCIInputImageKey)
-            compositeFilter.setValue(backgroundColor, forKey: kCIInputBackgroundImageKey)
-            
-            // Crop to original bounds
-            return compositeFilter.outputImage!.cropped(to: imageExtent)
-        } else {
-            // For zoom in (scale >= 1), use the original approach
-            let clampFilter = CIFilter(name: "CIAffineClamp")!
-            clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
-            clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
-            
-            // Crop to original bounds
-            let clampedImage = clampFilter.outputImage!
-            return clampedImage.cropped(to: imageExtent)
-        }
+        // Use CIAffineClamp to prevent edge stretching
+        let clampFilter = CIFilter(name: "CIAffineClamp")!
+        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
+        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+        
+        let clampedImage = clampFilter.outputImage!
+        
+        // Create a background to ensure the output fills the entire extent
+        let backgroundColor = CIImage(color: CIColor.clear).cropped(to: imageExtent)
+        
+        // Composite the clamped image over the background
+        let compositeFilter = CIFilter(name: "CISourceOverCompositing")!
+        compositeFilter.setValue(clampedImage, forKey: kCIInputImageKey)
+        compositeFilter.setValue(backgroundColor, forKey: kCIInputBackgroundImageKey)
+        
+        // Crop to original bounds to ensure exact size
+        return compositeFilter.outputImage!.cropped(to: imageExtent)
     }
 }
 
