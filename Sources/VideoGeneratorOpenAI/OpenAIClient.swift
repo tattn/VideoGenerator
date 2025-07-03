@@ -388,7 +388,17 @@ public actor OpenAIClient: Sendable {
     public func generateTimeline(prompt: String) async throws -> Timeline {
         let timelineSchema = try loadTimelineSchema()
         
-        var systemPrompt = "You are a video timeline generator. Generate a timeline JSON that follows the provided schema based on the user's prompt."
+        var systemPrompt = """
+            You are a video timeline generator. Generate a timeline JSON that follows the provided schema based on the user's prompt.
+            
+            IMPORTANT RULES:
+            1. Each track MUST contain a 'clips' array with at least one clip
+            2. Never generate empty clips arrays - always include relevant content
+            3. For video/overlay tracks: add video or image clips
+            4. For audio tracks: add audio clips
+            5. For effect tracks: add clips with effects applied
+            6. Each clip must have all required properties: id, mediaItem, timeRange, frame, contentMode, effects, opacity
+            """
         
         if configuration.imageGenerationOptions.maxImages > 0 {
             systemPrompt += " When generating image media items, use descriptive text in the 'imageData' field with a special prefix 'GENERATE_IMAGE:' followed by the image description. You can generate up to \(configuration.imageGenerationOptions.maxImages) images."
