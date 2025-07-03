@@ -520,8 +520,11 @@ public actor OpenAIClient: Sendable {
         return resolved
     }
     
-    nonisolated private func cleanSchemaForOpenAI(_ schema: [String: Any]) -> [String: Any] {
+    nonisolated private func cleanSchemaForOpenAI(_ schema: [String: Any], currentDepth: Int = 0) -> [String: Any] {
         var cleaned = [String: Any]()
+        
+        // OpenAI has a maximum nesting depth of 5
+        let maxDepth = 5
         
         // First pass: copy all values except the ones we need to skip or transform
         for (key, value) in schema {
@@ -541,14 +544,52 @@ public actor OpenAIClient: Sendable {
                 continue
             }
             
+            // Special handling for effect parameters to avoid deep nesting
+            if key == "parameters" && currentDepth >= 3 {
+                // This is likely the effect parameters object
+                if let parametersDict = value as? [String: Any],
+                   let properties = parametersDict["properties"] as? [String: Any] {
+                    var simplifiedProperties = [String: Any]()
+                    
+                    for (propKey, propValue) in properties {
+                        if propValue is [String: Any] {
+                            // Simplify nested object types to avoid exceeding depth limit
+                            if propKey == "color" || propKey == "size" || propKey == "point" {
+                                // Skip these nested objects as they cause depth issues
+                                // The actual values can still be passed as simple types
+                                continue
+                            } else {
+                                simplifiedProperties[propKey] = propValue
+                            }
+                        } else {
+                            simplifiedProperties[propKey] = propValue
+                        }
+                    }
+                    
+                    var simplifiedParameters = parametersDict
+                    simplifiedParameters["properties"] = simplifiedProperties
+                    simplifiedParameters["additionalProperties"] = false
+                    // Remove the required array for parameters as all are nullable
+                    simplifiedParameters.removeValue(forKey: "required")
+                    cleaned[key] = simplifiedParameters
+                    continue
+                }
+            }
+            
             if let dictValue = value as? [String: Any] {
-                cleaned[key] = cleanSchemaForOpenAI(dictValue)
+                // Check if this is a deeply nested object that would exceed the depth limit
+                if currentDepth >= maxDepth - 1 && hasNestedObjects(dictValue) {
+                    // Flatten or skip deeply nested structures
+                    continue
+                } else {
+                    cleaned[key] = cleanSchemaForOpenAI(dictValue, currentDepth: currentDepth + 1)
+                }
             } else if let arrayValue = value as? [[String: Any]] {
-                cleaned[key] = arrayValue.map { cleanSchemaForOpenAI($0) }
+                cleaned[key] = arrayValue.map { cleanSchemaForOpenAI($0, currentDepth: currentDepth + 1) }
             } else if let arrayValue = value as? [Any] {
                 cleaned[key] = arrayValue.map { item -> Any in
                     if let dictItem = item as? [String: Any] {
-                        return cleanSchemaForOpenAI(dictItem)
+                        return cleanSchemaForOpenAI(dictItem, currentDepth: currentDepth + 1)
                     }
                     return item
                 }
@@ -558,21 +599,47 @@ public actor OpenAIClient: Sendable {
         }
         
         // Second pass: handle required array after all properties have been processed
-        // OpenAI requires all properties to be in the required array
-        // and the required array should only contain keys that exist in properties
+        // OpenAI requires certain properties to be in the required array
+        // but we should only include non-nullable properties
         if let properties = cleaned["properties"] as? [String: Any] {
-            let allPropertyKeys = Set(properties.keys)
+            var requiredKeys: [String] = []
             
-            // If there's an existing required array in the original schema, 
-            // filter it to only include valid keys
+            // Check each property to determine if it should be required
+            for (propertyKey, propertyValue) in properties {
+                if let propertyDict = propertyValue as? [String: Any] {
+                    // Check if property is nullable by looking at its type
+                    if let typeValue = propertyDict["type"] {
+                        if let typeArray = typeValue as? [Any] {
+                            // If type is an array and contains "null", it's nullable
+                            let containsNull = typeArray.contains { item in
+                                if let str = item as? String {
+                                    return str == "null"
+                                }
+                                return false
+                            }
+                            if !containsNull {
+                                requiredKeys.append(propertyKey)
+                            }
+                        } else if let _ = typeValue as? String {
+                            // If type is a single string (not array), it's not nullable
+                            requiredKeys.append(propertyKey)
+                        }
+                    }
+                }
+            }
+            
+            // If there's an existing required array, merge it with our calculated required keys
             if let existingRequired = schema["required"] as? [String] {
-                let validRequired = existingRequired.filter { allPropertyKeys.contains($0) }
-                // Add any missing property keys
-                let missingKeys = allPropertyKeys.subtracting(validRequired)
-                cleaned["required"] = validRequired + Array(missingKeys).sorted()
+                let existingSet = Set(existingRequired)
+                let calculatedSet = Set(requiredKeys)
+                let allPropertyKeys = Set(properties.keys)
+                
+                // Keep only the required keys that exist in properties and are not nullable
+                let validRequired = existingSet.intersection(allPropertyKeys).intersection(calculatedSet)
+                cleaned["required"] = Array(validRequired).sorted()
             } else {
-                // If no required array exists, add all property keys
-                cleaned["required"] = Array(allPropertyKeys).sorted()
+                // Use our calculated required keys
+                cleaned["required"] = requiredKeys.sorted()
             }
         } else if let existingRequired = schema["required"] as? [String] {
             // If there are no properties but there is a required array, keep it
@@ -580,6 +647,24 @@ public actor OpenAIClient: Sendable {
         }
         
         return cleaned
+    }
+    
+    nonisolated private func hasNestedObjects(_ dict: [String: Any]) -> Bool {
+        for (_, value) in dict {
+            if let dictValue = value as? [String: Any] {
+                // Check if this dictionary has properties that contain objects
+                if let properties = dictValue["properties"] as? [String: Any] {
+                    for (_, propValue) in properties {
+                        if let propDict = propValue as? [String: Any],
+                           propDict["type"] as? String == "object" ||
+                           (propDict["type"] as? [String])?.contains("object") == true {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+        return false
     }
     
     private func processImageGeneration(in timeline: Timeline) async throws -> Timeline {
