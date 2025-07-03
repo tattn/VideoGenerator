@@ -444,8 +444,10 @@ public final class TimelineConverter {
     @MainActor
     private static func convertFromCodable(_ codable: CodableTrack) async throws -> Track {
         var clips: [Clip] = []
-        for codableClip in codable.clips {
-            clips.append(try await convertFromCodable(codableClip))
+        if let codableClips = codable.clips {
+            for codableClip in codableClips {
+                clips.append(try await convertFromCodable(codableClip))
+            }
         }
         
         return Track(

@@ -46,7 +46,6 @@
       "required": [
         "id",
         "trackType",
-        "clips",
         "isEnabled"
       ],
       "additionalProperties": false,
@@ -67,7 +66,10 @@
           "description": "Type of the track"
         },
         "clips": {
-          "type": "array",
+          "type": [
+            "array",
+            "null"
+          ],
           "description": "Array of clips in the track",
           "items": {
             "$ref": "#/definitions/clip"

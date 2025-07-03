@@ -288,7 +288,7 @@ public enum CodableSendableValue: Codable, Sendable {
 public struct CodableTrack: Codable, Sendable {
     let id: String
     let trackType: String
-    let clips: [CodableClip]
+    let clips: [CodableClip]?
     let isEnabled: Bool
     let volume: Float?
     let opacity: Float?
