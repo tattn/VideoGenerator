@@ -443,7 +443,7 @@ public actor OpenAIClient: Sendable {
         return timeline
     }
     
-    private func performRequest(_ request: ChatCompletionRequest) async throws -> ChatCompletionResponse {
+    public func performRequest(_ request: ChatCompletionRequest) async throws -> ChatCompletionResponse {
         let endpoint = configuration.baseURL.appendingPathComponent("chat/completions")
         var urlRequest = URLRequest(url: endpoint)
         urlRequest.httpMethod = "POST"
