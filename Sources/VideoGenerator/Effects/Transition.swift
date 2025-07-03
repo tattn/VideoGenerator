@@ -93,18 +93,11 @@ public struct SlideTransition: Transition {
         let transformedFrom = from.transformed(by: fromTransform)
         let transformedTo = to.transformed(by: toTransform)
         
-        // Use CIAffineClamp to prevent edge stretching
-        let clampFilterFrom = CIFilter(name: "CIAffineClamp")!
-        clampFilterFrom.setValue(transformedFrom, forKey: kCIInputImageKey)
-        clampFilterFrom.setValue(CGAffineTransform.identity, forKey: "inputTransform")
-        let clampedFrom = clampFilterFrom.outputImage!
+        // Crop both images to the original size to prevent edge stretching
+        let croppedFrom = transformedFrom.cropped(to: CGRect(origin: .zero, size: size))
+        let croppedTo = transformedTo.cropped(to: CGRect(origin: .zero, size: size))
         
-        let clampFilterTo = CIFilter(name: "CIAffineClamp")!
-        clampFilterTo.setValue(transformedTo, forKey: kCIInputImageKey)
-        clampFilterTo.setValue(CGAffineTransform.identity, forKey: "inputTransform")
-        let clampedTo = clampFilterTo.outputImage!
-        
-        return clampedTo.composited(over: clampedFrom)
+        return croppedTo.composited(over: croppedFrom)
     }
 }
 
@@ -160,7 +153,12 @@ public struct ZoomTransition: Transition {
         transform = transform.scaledBy(x: CGFloat(scale), y: CGFloat(scale))
         transform = transform.translatedBy(x: -centerX, y: -centerY)
         
-        let scaledFrom = from.transformed(by: transform).applyingFilter("CIColorMatrix", parameters: [
+        let transformedFrom = from.transformed(by: transform)
+        
+        // Crop to original bounds
+        let croppedFrom = transformedFrom.cropped(to: from.extent)
+        
+        let scaledFrom = croppedFrom.applyingFilter("CIColorMatrix", parameters: [
             "inputAVector": CIVector(x: 0, y: 0, z: 0, w: CGFloat(opacity))
         ])
         

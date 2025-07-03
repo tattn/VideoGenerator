@@ -34,16 +34,8 @@ public struct ZoomEffect: Effect, Sendable {
         // Apply transform
         let transformedImage = image.transformed(by: transform)
         
-        // Create a clamp filter to ensure the image fills the original extent
-        let clampFilter = CIFilter(name: "CIAffineClamp")!
-        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
-        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
-        
-        // Crop to original bounds
-        let clampedImage = clampFilter.outputImage!
-        let croppedImage = clampedImage.cropped(to: imageExtent)
-        
-        return croppedImage
+        // Crop to original bounds to prevent edge stretching
+        return transformedImage.cropped(to: imageExtent)
     }
 }
 
@@ -178,19 +170,12 @@ public struct KenBurnsEffect: Effect, Sendable {
         // Apply transform
         let transformedImage = croppedImage.transformed(by: transform)
         
-        // Use CIAffineClamp to prevent edge stretching
-        let clampFilter = CIFilter(name: "CIAffineClamp")!
-        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
-        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
-        
-        let clampedImage = clampFilter.outputImage!
-        
         // Create a background to ensure the output fills the entire extent
         let backgroundColor = CIImage(color: CIColor.clear).cropped(to: imageExtent)
         
-        // Composite the clamped image over the background
+        // Composite the transformed image over the background
         let compositeFilter = CIFilter(name: "CISourceOverCompositing")!
-        compositeFilter.setValue(clampedImage, forKey: kCIInputImageKey)
+        compositeFilter.setValue(transformedImage, forKey: kCIInputImageKey)
         compositeFilter.setValue(backgroundColor, forKey: kCIInputBackgroundImageKey)
         
         // Crop to original bounds to ensure exact size

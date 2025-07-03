@@ -107,10 +107,14 @@ public actor VideoCompositor {
             switch clip.contentMode {
             case .scaleToFill:
                 // Original behavior - scale to fill the entire frame
-                image = image
-                    .transformed(by: CGAffineTransform(scaleX: targetFrame.width / imageSize.width,
-                                                      y: targetFrame.height / imageSize.height))
-                    .transformed(by: CGAffineTransform(translationX: targetFrame.minX, y: targetFrame.minY))
+                let transform = CGAffineTransform(scaleX: targetFrame.width / imageSize.width,
+                                                 y: targetFrame.height / imageSize.height)
+                    .concatenating(CGAffineTransform(translationX: targetFrame.minX, y: targetFrame.minY))
+                
+                let transformedImage = image.transformed(by: transform)
+                
+                // Crop to target frame bounds
+                image = transformedImage.cropped(to: targetFrame)
                 
             case .aspectFit:
                 // Calculate scale to fit within frame while maintaining aspect ratio
@@ -126,9 +130,13 @@ public actor VideoCompositor {
                 let xOffset = targetFrame.minX + (targetFrame.width - scaledWidth) / 2
                 let yOffset = targetFrame.minY + (targetFrame.height - scaledHeight) / 2
                 
-                image = image
-                    .transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-                    .transformed(by: CGAffineTransform(translationX: xOffset, y: yOffset))
+                let transform = CGAffineTransform(scaleX: scale, y: scale)
+                    .concatenating(CGAffineTransform(translationX: xOffset, y: yOffset))
+                
+                let transformedImage = image.transformed(by: transform)
+                
+                // Crop to target frame bounds
+                image = transformedImage.cropped(to: targetFrame)
                 
             case .aspectFill:
                 // Calculate scale to fill frame while maintaining aspect ratio
@@ -144,9 +152,13 @@ public actor VideoCompositor {
                 let xOffset = targetFrame.minX + (targetFrame.width - scaledWidth) / 2
                 let yOffset = targetFrame.minY + (targetFrame.height - scaledHeight) / 2
                 
-                image = image
-                    .transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-                    .transformed(by: CGAffineTransform(translationX: xOffset, y: yOffset))
+                let transform = CGAffineTransform(scaleX: scale, y: scale)
+                    .concatenating(CGAffineTransform(translationX: xOffset, y: yOffset))
+                
+                let transformedImage = image.transformed(by: transform)
+                
+                // Crop to target frame bounds
+                image = transformedImage.cropped(to: targetFrame)
             }
         }
         

@@ -61,25 +61,16 @@ public struct CameraShakeEffect: Effect, Sendable {
         // Apply transform to image
         let transformedImage = image.transformed(by: transform)
         
-        // Use CIAffineClamp to prevent edge stretching
-        let clampFilter = CIFilter(name: "CIAffineClamp")!
-        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
-        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
-        
-        let clampedImage = clampFilter.outputImage!
-        
-        // Create a larger canvas to avoid clipping
-        let expandedBounds = imageBounds.insetBy(dx: CGFloat(-intensity * 2), dy: CGFloat(-intensity * 2))
-        let expandedImage = clampedImage.cropped(to: expandedBounds)
-        
-        // Composite over a clear background at the original position
+        // Create a background to ensure the output fills the entire extent
         let backgroundImage = CIImage(color: .clear).cropped(to: imageBounds)
         
-        // Center the shaken image on the original bounds
-        let finalImage = expandedImage.composited(over: backgroundImage)
+        // Composite the transformed image over the background
+        let compositeFilter = CIFilter(name: "CISourceOverCompositing")!
+        compositeFilter.setValue(transformedImage, forKey: kCIInputImageKey)
+        compositeFilter.setValue(backgroundImage, forKey: kCIInputBackgroundImageKey)
         
         // Crop to original bounds to maintain exact dimensions
-        return finalImage.cropped(to: imageBounds)
+        return compositeFilter.outputImage!.cropped(to: imageBounds)
     }
     
     /// Generate smooth noise using layered sine waves
