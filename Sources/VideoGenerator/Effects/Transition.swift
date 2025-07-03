@@ -93,7 +93,18 @@ public struct SlideTransition: Transition {
         let transformedFrom = from.transformed(by: fromTransform)
         let transformedTo = to.transformed(by: toTransform)
         
-        return transformedTo.composited(over: transformedFrom)
+        // Use CIAffineClamp to prevent edge stretching
+        let clampFilterFrom = CIFilter(name: "CIAffineClamp")!
+        clampFilterFrom.setValue(transformedFrom, forKey: kCIInputImageKey)
+        clampFilterFrom.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+        let clampedFrom = clampFilterFrom.outputImage!
+        
+        let clampFilterTo = CIFilter(name: "CIAffineClamp")!
+        clampFilterTo.setValue(transformedTo, forKey: kCIInputImageKey)
+        clampFilterTo.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+        let clampedTo = clampFilterTo.outputImage!
+        
+        return clampedTo.composited(over: clampedFrom)
     }
 }
 

@@ -61,9 +61,16 @@ public struct CameraShakeEffect: Effect, Sendable {
         // Apply transform to image
         let transformedImage = image.transformed(by: transform)
         
+        // Use CIAffineClamp to prevent edge stretching
+        let clampFilter = CIFilter(name: "CIAffineClamp")!
+        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
+        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+        
+        let clampedImage = clampFilter.outputImage!
+        
         // Create a larger canvas to avoid clipping
         let expandedBounds = imageBounds.insetBy(dx: CGFloat(-intensity * 2), dy: CGFloat(-intensity * 2))
-        let expandedImage = transformedImage.cropped(to: expandedBounds)
+        let expandedImage = clampedImage.cropped(to: expandedBounds)
         
         // Composite over a clear background at the original position
         let backgroundImage = CIImage(color: .clear).cropped(to: imageBounds)

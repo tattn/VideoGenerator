@@ -294,8 +294,14 @@ public struct EffectPresets {
                         let transform = CGAffineTransform(translationX: 5, y: 0)
                         let transformed = filter?.outputImage?.transformed(by: transform)
                         
+                        // Use CIAffineClamp to prevent edge stretching
+                        let clampFilter = CIFilter(name: "CIAffineClamp")
+                        clampFilter?.setValue(transformed, forKey: kCIInputImageKey)
+                        clampFilter?.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+                        let clamped = clampFilter?.outputImage
+                        
                         let composite = CIFilter(name: "CISourceOverCompositing")
-                        composite?.setValue(transformed, forKey: kCIInputImageKey)
+                        composite?.setValue(clamped, forKey: kCIInputImageKey)
                         composite?.setValue(image, forKey: kCIInputBackgroundImageKey)
                         
                         return composite?.outputImage ?? image

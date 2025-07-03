@@ -21,8 +21,18 @@ public struct ScaleEffect: Effect {
         let scaleX: Float = parameters["scaleX"] ?? 1.0
         let scaleY: Float = parameters["scaleY"] ?? 1.0
         
+        let imageExtent = image.extent
         let transform = CGAffineTransform(scaleX: CGFloat(scaleX), y: CGFloat(scaleY))
-        return image.transformed(by: transform)
+        let transformedImage = image.transformed(by: transform)
+        
+        // Use CIAffineClamp to prevent edge stretching
+        let clampFilter = CIFilter(name: "CIAffineClamp")!
+        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
+        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+        
+        // Crop to original bounds
+        let clampedImage = clampFilter.outputImage!
+        return clampedImage.cropped(to: imageExtent)
     }
 }
 
@@ -42,8 +52,18 @@ public struct RotationEffect: Effect {
     public func apply(to image: CIImage, at time: CMTime, renderContext: any RenderContext) async throws -> CIImage {
         let angle: Float = parameters["angle"] ?? 0.0
         
+        let imageExtent = image.extent
         let transform = CGAffineTransform(rotationAngle: CGFloat(angle))
-        return image.transformed(by: transform)
+        let transformedImage = image.transformed(by: transform)
+        
+        // Use CIAffineClamp to prevent edge stretching
+        let clampFilter = CIFilter(name: "CIAffineClamp")!
+        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
+        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+        
+        // Crop to original bounds
+        let clampedImage = clampFilter.outputImage!
+        return clampedImage.cropped(to: imageExtent)
     }
 }
 
@@ -65,8 +85,18 @@ public struct TranslationEffect: Effect {
         let x: Float = parameters["x"] ?? 0.0
         let y: Float = parameters["y"] ?? 0.0
         
+        let imageExtent = image.extent
         let transform = CGAffineTransform(translationX: CGFloat(x), y: CGFloat(y))
-        return image.transformed(by: transform)
+        let transformedImage = image.transformed(by: transform)
+        
+        // Use CIAffineClamp to prevent edge stretching
+        let clampFilter = CIFilter(name: "CIAffineClamp")!
+        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
+        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+        
+        // Crop to original bounds
+        let clampedImage = clampFilter.outputImage!
+        return clampedImage.cropped(to: imageExtent)
     }
 }
 
@@ -91,13 +121,23 @@ public struct AnimatedRotationEffect: Effect {
         let progress = Float(time.seconds) / duration
         let angle = progress * rotations * 2 * Float.pi
         
-        let centerX = image.extent.midX
-        let centerY = image.extent.midY
+        let imageExtent = image.extent
+        let centerX = imageExtent.midX
+        let centerY = imageExtent.midY
         
         var transform = CGAffineTransform(translationX: centerX, y: centerY)
         transform = transform.rotated(by: CGFloat(angle))
         transform = transform.translatedBy(x: -centerX, y: -centerY)
         
-        return image.transformed(by: transform)
+        let transformedImage = image.transformed(by: transform)
+        
+        // Use CIAffineClamp to prevent edge stretching
+        let clampFilter = CIFilter(name: "CIAffineClamp")!
+        clampFilter.setValue(transformedImage, forKey: kCIInputImageKey)
+        clampFilter.setValue(CGAffineTransform.identity, forKey: "inputTransform")
+        
+        // Crop to original bounds
+        let clampedImage = clampFilter.outputImage!
+        return clampedImage.cropped(to: imageExtent)
     }
 }
